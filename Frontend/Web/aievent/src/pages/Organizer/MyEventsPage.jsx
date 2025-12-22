@@ -50,6 +50,7 @@ import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
 import EmptyEventState from '../../components/Event/EmptyEventState';
 import QuickFilterChips from '../../components/Event/QuickFilterChips';
 import RadialStatusMenu from '../../components/Event/RadialStatusMenu';
+import EventMetricsCard from '../../components/Event/EventMetricsCard';
 
 const MyEventsPage = () => {
   const navigate = useNavigate();
@@ -1087,51 +1088,15 @@ const MyEventsPage = () => {
                           )}
                         </div>
 
-                        {/* Collapsible Metrics grid */}
+                        {/* Event Metrics Card */}
                         <div className="mb-4">
-                          {viewMode !== 'compact' && (
-                            <button
-                              onClick={() => toggleMetrics(event.eventId)}
-                              className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-2 transition-colors"
-                            >
-                              {isMetricsExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                              {isMetricsExpanded ? 'Ẩn thống kê' : 'Xem thống kê'}
-                            </button>
-                          )}
-                          
-                          <div className={`transition-all duration-300 ease-in-out ${isMetricsExpanded || viewMode === 'compact' ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                            <div className={`grid ${viewMode === 'compact' ? 'grid-cols-3 gap-2' : 'grid-cols-2 sm:grid-cols-4 gap-3'} pb-4 border-b border-white/10`}>
-                              <div className="backdrop-blur-sm bg-gradient-to-br from-blue-100/50 to-blue-50/30 dark:from-blue-900/50 dark:to-blue-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-blue-700 dark:text-blue-400`}>
-                                  {formatCurrency(event.totalAmount)}
-                                </p>
-                              </div>
-                              <div className="backdrop-blur-sm bg-gradient-to-br from-orange-100/50 to-orange-50/30 dark:from-orange-900/50 dark:to-orange-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Phí nền tảng</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-orange-700 dark:text-orange-400`}>
-                                  {formatCurrency(event.platformFee)}
-                                </p>
-                              </div>
-                              <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-emerald-700 dark:text-emerald-400`}>
-                                  {formatCurrency(event.payoutAmount)}
-                                </p>
-                              </div>
-                              {viewMode !== 'compact' && (
-                                <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Cấu hình phí</p>
-                                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                    {event.flatformFee ? `${(event.flatformFee * 100).toFixed(0)}%` : '7%'} + {formatCurrency(event.fixFee || 45000)}
-                                  </p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Thanh toán sau {event.datePayout || 7} ngày
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <EventMetricsCard
+                            event={event}
+                            isExpanded={isMetricsExpanded}
+                            onToggle={() => toggleMetrics(event.eventId)}
+                            viewMode={viewMode}
+                            showToggle={viewMode !== 'compact'}
+                          />
                         </div>
 
                         {/* Actions */}
@@ -1218,7 +1183,7 @@ const MyEventsPage = () => {
                                 onClick={() => handleCloneEvent(event)}
                               >
                                 <Copy className="w-4 h-4 mr-1" />
-                                Clone
+                                Sao Chép
                               </Button>
                             </>
                           )}
