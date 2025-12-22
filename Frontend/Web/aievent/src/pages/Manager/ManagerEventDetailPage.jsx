@@ -993,33 +993,25 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="space-y-3">
                   <div className="relative">
                     <ActionButton
-                      icon={CheckCircle}
+                      icon={isApproving ? Loader2 : CheckCircle}
                       label={isApproving ? "Đang phê duyệt..." : "Phê duyệt sự kiện"}
                       onClick={handleApproveEvent}
                       variant="primary"
                       disabled={isApproving}
+                      className={isApproving ? "[&_svg]:animate-spin" : ""}
                     />
-                    {isApproving && (
-                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                        <Loader2 className="w-6 h-6 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
                   
                   <Dialog>
                     <DialogTrigger asChild>
                       <div className="relative">
                         <ActionButton
-                          icon={X}
+                          icon={isRejecting ? Loader2 : X}
                           label={isRejecting ? "Đang từ chối..." : "Từ chối sự kiện"}
                           variant="danger"
                           disabled={isRejecting}
+                          className={isRejecting ? "[&_svg]:animate-spin" : ""}
                         />
-                        {isRejecting && (
-                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                            <Loader2 className="w-6 h-6 text-white animate-spin" />
-                          </div>
-                        )}
                       </div>
                     </DialogTrigger>
                     <DialogContent>
@@ -1079,17 +1071,13 @@ Nhấn OK để xác nhận xóa.`;
                   </div>
                   <div className="relative">
                     <ActionButton
-                      icon={CheckCircle}
+                      icon={isResolvingPayment ? Loader2 : CheckCircle}
                       label={isResolvingPayment ? "Đang xử lý..." : "Thanh toán lại"}
                       onClick={() => setIsResolvePaymentDialogOpen(true)}
                       variant="primary"
                       disabled={isResolvingPayment}
+                      className={isResolvingPayment ? "[&_svg]:animate-spin" : ""}
                     />
-                    {isResolvingPayment && (
-                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                        <Loader2 className="w-6 h-6 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
                 </div>
               </SidebarCard>
@@ -1114,16 +1102,13 @@ Nhấn OK để xác nhận xóa.`;
                       <DialogTrigger asChild>
                         <div className="relative">
                           <ActionButton
-                            icon={Flag}
-                            label="Hủy sự kiện vi phạm"
+                            icon={isCancelling ? Loader2 : Flag}
+                            label={isCancelling ? "Đang hủy..." : "Hủy sự kiện vi phạm"}
                             variant="danger"
                             onClick={() => setIsCancelDialogOpen(true)}
+                            disabled={isCancelling}
+                            className={isCancelling ? "[&_svg]:animate-spin" : ""}
                           />
-                          {isCancelling && (
-                            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                              <Loader2 className="w-6 h-6 text-white animate-spin" />
-                            </div>
-                          )}
                         </div>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
