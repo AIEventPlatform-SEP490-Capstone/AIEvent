@@ -60,7 +60,7 @@ import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
 import EmptyEventState from '../../components/Event/EmptyEventState';
 import QuickFilterChips from '../../components/Event/QuickFilterChips';
 import RadialStatusMenu from '../../components/Event/RadialStatusMenu';
-import EventMetricsCard from '../../components/Event/EventMetricsCard';
+import EventMetricsCard, { DeficitAlert } from '../../components/Event/EventMetricsCard';
 
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
@@ -1471,12 +1471,18 @@ const ManagerEventsPage = () => {
                         {/* Header */}
                         <div className="mb-4">
                           <div className="flex items-start justify-between gap-4 mb-3">
-                            <h3
-                              className="text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
-                              onClick={() => handleViewEvent(event.eventId)}
-                            >
-                              {event.title}
-                            </h3>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <h3
+                                className="text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer truncate"
+                                onClick={() => handleViewEvent(event.eventId)}
+                              >
+                                {event.title}
+                              </h3>
+                              {/* Alert icon khi doanh thu < phí nền tảng */}
+                              {event.totalAmount > 0 && event.totalAmount < event.platformFee && (
+                                <DeficitAlert />
+                              )}
+                            </div>
                             {eventStatus && (
                               <Badge
                                 className={`${statusConfig.badge} border-0 whitespace-nowrap flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all group-hover:shadow-lg group-hover:${statusConfig.glow}`}

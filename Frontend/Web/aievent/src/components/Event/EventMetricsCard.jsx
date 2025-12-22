@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo } from 'react';
+import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const formatCurrency = (amount, short = false) => {
   if (!amount || amount === 0) return '0đ';
@@ -41,6 +42,12 @@ const StatBlock = ({ label, value, subText, variant = 'default' }) => {
       value: 'text-emerald-600 dark:text-emerald-400',
       subText: 'text-emerald-500 dark:text-emerald-400',
     },
+    danger: {
+      container: 'bg-red-50 dark:bg-red-900/30',
+      label: 'text-red-600 dark:text-red-300',
+      value: 'text-red-600 dark:text-red-400',
+      subText: 'text-red-500 dark:text-red-400',
+    },
   };
 
   const style = variants[variant];
@@ -65,6 +72,33 @@ const StatBlock = ({ label, value, subText, variant = 'default' }) => {
   );
 };
 
+/**
+ * DeficitAlert - Icon cảnh báo khi doanh thu không đủ bù phí
+ */
+const DeficitAlert = () => {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex ml-2 cursor-help flex-shrink-0">
+            <AlertCircle className="w-4 h-4 text-red-500" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent 
+          side="bottom" 
+          align="start"
+          sideOffset={8}
+          className="max-w-[280px] z-[9999] bg-red-50 border-red-200 text-red-700 shadow-lg"
+        >
+          <p className="text-sm leading-relaxed">
+            Doanh thu hiện tại chưa đủ bù phí nền tảng, vì vậy nhà tổ chức sẽ không nhận được khoản chi trả này.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 const EventMetricsCard = ({
   event,
   isExpanded = false,
@@ -74,13 +108,19 @@ const EventMetricsCard = ({
   className,
 }) => {
   const metrics = useMemo(() => {
+    const totalAmount = event.totalAmount || 0;
+    const platformFee = event.platformFee || 0;
+    const payoutAmount = event.payoutAmount || 0;
+    const isDeficit = totalAmount > 0 && totalAmount < platformFee;
+    
     return {
-      totalAmount: event.totalAmount || 0,
-      platformFee: event.platformFee || 0,
-      payoutAmount: event.payoutAmount || 0,
+      totalAmount,
+      platformFee,
+      payoutAmount,
       flatformFeePercent: event.flatformFee ? (event.flatformFee * 100) : 7,
       fixFee: event.fixFee || 45000,
       datePayout: event.datePayout || 7,
+      isDeficit,
     };
   }, [event]);
 
@@ -99,8 +139,8 @@ const EventMetricsCard = ({
         />
         <StatBlock
           label="Nhận"
-          value={formatCurrency(metrics.payoutAmount, true)}
-          variant="success"
+          value={metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount, true)}
+          variant={metrics.isDeficit ? 'danger' : 'success'}
         />
       </div>
     );
@@ -117,8 +157,11 @@ const EventMetricsCard = ({
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           <span>{isExpanded ? 'Ẩn thống kê' : 'Xem thống kê'}</span>
           {!isExpanded && (
-            <span className="ml-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(metrics.payoutAmount, true)}
+            <span className={cn(
+              "ml-1.5 font-medium",
+              metrics.isDeficit ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+            )}>
+              {metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount, true)}
             </span>
           )}
         </button>
@@ -132,19 +175,18 @@ const EventMetricsCard = ({
           <StatBlock
             label="Doanh thu"
             value={formatCurrency(metrics.totalAmount)}
-            subText={`Tổng doanh thu sự kiện`}
           />
           <StatBlock
             label="Phí nền tảng"
             value={formatCurrency(metrics.platformFee)}
-            subText={`${metrics.flatformFeePercent}% Doanh Thu + ${formatCurrency(metrics.fixFee, true)}`}
+            subText={`${metrics.flatformFeePercent}% + ${formatCurrency(metrics.fixFee, true)}`}
             variant="warning"
           />
           <StatBlock
             label="Thanh toán"
-            value={formatCurrency(metrics.payoutAmount)}
-            subText={`Thanh toán sau ${metrics.datePayout} ngày`}
-            variant="success"
+            value={metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount)}
+            subText={metrics.isDeficit ? 'Không đủ bù phí' : `Sau ${metrics.datePayout} ngày`}
+            variant={metrics.isDeficit ? 'danger' : 'success'}
           />
         </div>
       </div>
@@ -152,4 +194,6 @@ const EventMetricsCard = ({
   );
 };
 
+// Export DeficitAlert để sử dụng trong event card title
+export { DeficitAlert };
 export default EventMetricsCard;
