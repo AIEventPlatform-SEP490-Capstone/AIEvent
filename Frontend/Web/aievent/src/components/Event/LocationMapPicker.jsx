@@ -207,9 +207,6 @@ const LocationMapPicker = ({
               <div style="font-weight: 600; margin-bottom: 4px;">${result.district || 'Chưa xác định'}</div>
               <div style="font-size: 12px; color: #666;">${result.ward || ''}</div>
               <div style="font-size: 11px; color: #888; margin-top: 4px;">${result.address || ''}</div>
-              <div style="font-size: 10px; color: ${result.confidence === 'high' ? '#22c55e' : result.confidence === 'medium' ? '#f59e0b' : '#ef4444'}; margin-top: 4px;">
-                Độ tin cậy: ${result.confidence === 'high' ? 'Cao' : result.confidence === 'medium' ? 'Trung bình' : 'Thấp'}
-              </div>
             </div>
           `;
           markerRef.current.bindPopup(popupContent).openPopup();
@@ -427,12 +424,8 @@ const LocationMapPicker = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-foreground">
-                      {addressInfo.district || 'Chưa xác định quận/huyện'}
+                      {addressInfo.district || 'Thông tin địa chỉ mới không bao gồm quận/huyện - Hãy cập nhật nếu cần thiết '}
                     </span>
-                    <Badge className={`text-xs ${getConfidenceBadgeClass(addressInfo.confidence)}`}>
-                      {addressInfo.confidence === 'high' ? 'Độ tin cậy cao' : 
-                       addressInfo.confidence === 'medium' ? 'Độ tin cậy TB' : 'Cần xác minh'}
-                    </Badge>
                   </div>
                   {addressInfo.ward && (
                     <p className="text-sm text-muted-foreground">Phường: {addressInfo.ward}</p>
