@@ -82,6 +82,7 @@ const ManagerEventDetailPage = () => {
 
   // Add state for image carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoSliding, setIsAutoSliding] = useState(true);
   
   // Add loading states for approval/rejection actions
   const [isApproving, setIsApproving] = useState(false);
@@ -97,6 +98,19 @@ const ManagerEventDetailPage = () => {
 
   const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, cancelEventByManager, loading: eventLoading } = useEvents();
   
+  // Auto-slide effect for event images
+  useEffect(() => {
+    if (!event?.imgListEvent || event.imgListEvent.length <= 1 || !isAutoSliding) return;
+    
+    const slideInterval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === event.imgListEvent.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 4000);
+    
+    return () => clearInterval(slideInterval);
+  }, [event?.imgListEvent, isAutoSliding]);
+
   // Countdown timer effect for ticket sale
   useEffect(() => {
     if (!event?.saleStartTime) return;
@@ -551,14 +565,25 @@ Nhấn OK để xác nhận xóa.`;
         </div>
       </div>
 
-      <div className="relative h-96 w-full overflow-hidden bg-gray-100">
+      <div 
+        className="relative h-96 w-full overflow-hidden bg-gray-100"
+        onMouseEnter={() => setIsAutoSliding(false)}
+        onMouseLeave={() => setIsAutoSliding(true)}
+      >
         {event.imgListEvent && event.imgListEvent.length > 0 ? (
           <>
-            <img 
-              src={event.imgListEvent[currentImageIndex]} 
-              alt={event.title} 
-              className="w-full h-full object-cover" 
-            />
+            <div className="relative w-full h-full">
+              {event.imgListEvent.map((img, index) => (
+                <img 
+                  key={index}
+                  src={img} 
+                  alt={`${event.title} - ${index + 1}`} 
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    currentImageIndex === index ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              ))}
+            </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
@@ -968,33 +993,25 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="space-y-3">
                   <div className="relative">
                     <ActionButton
-                      icon={CheckCircle}
+                      icon={isApproving ? Loader2 : CheckCircle}
                       label={isApproving ? "Đang phê duyệt..." : "Phê duyệt sự kiện"}
                       onClick={handleApproveEvent}
                       variant="primary"
                       disabled={isApproving}
+                      className={isApproving ? "[&_svg]:animate-spin" : ""}
                     />
-                    {isApproving && (
-                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                        <Loader2 className="w-6 h-6 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
                   
                   <Dialog>
                     <DialogTrigger asChild>
                       <div className="relative">
                         <ActionButton
-                          icon={X}
+                          icon={isRejecting ? Loader2 : X}
                           label={isRejecting ? "Đang từ chối..." : "Từ chối sự kiện"}
                           variant="danger"
                           disabled={isRejecting}
+                          className={isRejecting ? "[&_svg]:animate-spin" : ""}
                         />
-                        {isRejecting && (
-                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                            <Loader2 className="w-6 h-6 text-white animate-spin" />
-                          </div>
-                        )}
                       </div>
                     </DialogTrigger>
                     <DialogContent>
@@ -1054,17 +1071,13 @@ Nhấn OK để xác nhận xóa.`;
                   </div>
                   <div className="relative">
                     <ActionButton
-                      icon={CheckCircle}
+                      icon={isResolvingPayment ? Loader2 : CheckCircle}
                       label={isResolvingPayment ? "Đang xử lý..." : "Thanh toán lại"}
                       onClick={() => setIsResolvePaymentDialogOpen(true)}
                       variant="primary"
                       disabled={isResolvingPayment}
+                      className={isResolvingPayment ? "[&_svg]:animate-spin" : ""}
                     />
-                    {isResolvingPayment && (
-                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                        <Loader2 className="w-6 h-6 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
                 </div>
               </SidebarCard>
@@ -1089,16 +1102,13 @@ Nhấn OK để xác nhận xóa.`;
                       <DialogTrigger asChild>
                         <div className="relative">
                           <ActionButton
-                            icon={Flag}
-                            label="Hủy sự kiện vi phạm"
+                            icon={isCancelling ? Loader2 : Flag}
+                            label={isCancelling ? "Đang hủy..." : "Hủy sự kiện vi phạm"}
                             variant="danger"
                             onClick={() => setIsCancelDialogOpen(true)}
+                            disabled={isCancelling}
+                            className={isCancelling ? "[&_svg]:animate-spin" : ""}
                           />
-                          {isCancelling && (
-                            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                              <Loader2 className="w-6 h-6 text-white animate-spin" />
-                            </div>
-                          )}
                         </div>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
