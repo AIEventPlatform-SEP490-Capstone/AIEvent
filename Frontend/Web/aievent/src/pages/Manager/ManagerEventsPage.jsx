@@ -60,6 +60,7 @@ import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
 import EmptyEventState from '../../components/Event/EmptyEventState';
 import QuickFilterChips from '../../components/Event/QuickFilterChips';
 import RadialStatusMenu from '../../components/Event/RadialStatusMenu';
+import EventMetricsCard from '../../components/Event/EventMetricsCard';
 
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
@@ -1469,9 +1470,9 @@ const ManagerEventsPage = () => {
                       <div className="flex-1 p-6 lg:p-8 flex flex-col justify-between">
                         {/* Header */}
                         <div className="mb-4">
-                          <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex items-start justify-between gap-3 mb-3">
                             <h3
-                              className="text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+                              className="text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer line-clamp-2 flex-1 min-w-0"
                               onClick={() => handleViewEvent(event.eventId)}
                             >
                               {event.title}
@@ -1544,35 +1545,15 @@ const ManagerEventsPage = () => {
                           )}
                         </div>
 
-                        {/* Metrics grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-white/10">
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
-                            <p className="text-base font-bold text-green-700 dark:text-green-400">
-                              {formatCurrency(event.totalAmount)}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-orange-100/50 to-orange-50/30 dark:from-orange-900/50 dark:to-orange-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Phí nền tảng</p>
-                            <p className="text-base font-bold text-orange-700 dark:text-orange-400">
-                              {formatCurrency(event.platformFee)}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
-                            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                              {formatCurrency(event.payoutAmount)}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Cấu hình phí</p>
-                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                              {event.flatformFee ? `${(event.flatformFee * 100).toFixed(0)}%` : '7%'} + {formatCurrency(event.fixFee || 45000)}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              TT sau {event.datePayout || 7} ngày
-                            </p>
-                          </div>
+                        {/* Event Metrics Card */}
+                        <div className="mb-4">
+                          <EventMetricsCard
+                            event={event}
+                            isExpanded={isMetricsExpanded}
+                            onToggle={() => toggleMetrics(event.eventId)}
+                            viewMode={viewMode}
+                            showToggle={viewMode !== 'compact'}
+                          />
                         </div>
 
                         {/* Actions */}

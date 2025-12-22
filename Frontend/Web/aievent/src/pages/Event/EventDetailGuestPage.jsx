@@ -88,6 +88,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isInviting, setIsInviting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isAutoSliding, setIsAutoSliding] = useState(true);
   const [aiRecommendedFriends, setAiRecommendedFriends] = useState([]); // New state for AI recommended friends
   const [showAiRecommendations, setShowAiRecommendations] = useState(false); // Toggle for showing AI recommendations
   const [isLoadingAiFriends, setIsLoadingAiFriends] = useState(false); // Loading state for AI friends
@@ -200,6 +201,19 @@ const EventDetailGuestPage = ({ previewData }) => {
   };
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } =
     useFavoriteEvents();
+
+  // Auto-slide effect for event images
+  useEffect(() => {
+    if (!event?.imgListEvent || event.imgListEvent.length <= 1 || !isAutoSliding) return;
+    
+    const slideInterval = setInterval(() => {
+      setSelectedImageIndex((prevIndex) => 
+        prevIndex === event.imgListEvent.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 4000);
+    
+    return () => clearInterval(slideInterval);
+  }, [event?.imgListEvent, isAutoSliding]);
 
   // Countdown timer effect for ticket sale
   useEffect(() => {
@@ -544,14 +558,25 @@ const EventDetailGuestPage = ({ previewData }) => {
         </div>
       </div>
 
-      <div className="relative h-96 w-full overflow-hidden bg-gray-100">
+      <div 
+        className="relative h-96 w-full overflow-hidden bg-gray-100"
+        onMouseEnter={() => setIsAutoSliding(false)}
+        onMouseLeave={() => setIsAutoSliding(true)}
+      >
         {event.imgListEvent && event.imgListEvent.length > 0 ? (
           <>
-            <img 
-              src={event.imgListEvent[selectedImageIndex]} 
-              alt={event.title} 
-              className="w-full h-full object-cover" 
-            />
+            <div className="relative w-full h-full">
+              {event.imgListEvent.map((img, index) => (
+                <img 
+                  key={index}
+                  src={img} 
+                  alt={`${event.title} - ${index + 1}`} 
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    selectedImageIndex === index ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              ))}
+            </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
