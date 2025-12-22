@@ -20,9 +20,35 @@ const formatCurrency = (amount, short = false) => {
 };
 
 /**
+ * DeficitAlert - Icon cảnh báo khi doanh thu không đủ bù phí
+ */
+const DeficitAlert = () => {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <AlertCircle className="w-3.5 h-3.5 text-red-500 cursor-help flex-shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          align="center"
+          sideOffset={8}
+          className="max-w-[280px] z-[9999] bg-red-50 border-red-200 text-red-700 shadow-lg"
+        >
+          <p className="text-sm leading-relaxed">
+            Doanh thu hiện tại chưa đủ bù phí nền tảng, vì vậy nhà tổ chức sẽ không nhận được khoản chi
+            trả này.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+/**
  * StatBlock - Khối hiển thị thông tin thống kê
  */
-const StatBlock = ({ label, value, subText, variant = 'default' }) => {
+const StatBlock = ({ label, value, subText, variant = 'default', showAlert = false }) => {
   const variants = {
     default: {
       container: 'bg-slate-100 dark:bg-slate-800',
@@ -53,49 +79,16 @@ const StatBlock = ({ label, value, subText, variant = 'default' }) => {
   const style = variants[variant];
 
   return (
-    <div className={cn(
-      "flex-1 min-w-0 px-4 py-3 rounded-xl",
-      style.container
-    )}>
-      <p className={cn("text-xs font-medium uppercase tracking-wide mb-1.5", style.label)}>
-        {label}
-      </p>
-      <p className={cn("text-lg font-bold", style.value)}>
-        {value}
-      </p>
-      {subText && (
-        <p className={cn("text-xs mt-1", style.subText)}>
-          {subText}
-        </p>
-      )}
+    <div className={cn('flex-1 min-w-0 px-4 py-3 rounded-xl', style.container)}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className={cn('text-xs font-medium uppercase tracking-wide', style.label)}>
+          {label}
+        </span>
+        {showAlert && <DeficitAlert />}
+      </div>
+      <p className={cn('text-lg font-bold', style.value)}>{value}</p>
+      {subText && <p className={cn('text-xs mt-1', style.subText)}>{subText}</p>}
     </div>
-  );
-};
-
-/**
- * DeficitAlert - Icon cảnh báo khi doanh thu không đủ bù phí
- */
-const DeficitAlert = () => {
-  return (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex ml-2 cursor-help flex-shrink-0">
-            <AlertCircle className="w-4 h-4 text-red-500" />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent 
-          side="bottom" 
-          align="start"
-          sideOffset={8}
-          className="max-w-[280px] z-[9999] bg-red-50 border-red-200 text-red-700 shadow-lg"
-        >
-          <p className="text-sm leading-relaxed">
-            Doanh thu hiện tại chưa đủ bù phí nền tảng, vì vậy nhà tổ chức sẽ không nhận được khoản chi trả này.
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 };
 
@@ -141,6 +134,7 @@ const EventMetricsCard = ({
           label="Nhận"
           value={metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount, true)}
           variant={metrics.isDeficit ? 'danger' : 'success'}
+          showAlert={metrics.isDeficit}
         />
       </div>
     );
@@ -157,12 +151,17 @@ const EventMetricsCard = ({
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           <span>{isExpanded ? 'Ẩn thống kê' : 'Xem thống kê'}</span>
           {!isExpanded && (
-            <span className={cn(
-              "ml-1.5 font-medium",
-              metrics.isDeficit ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
-            )}>
-              {metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount, true)}
-            </span>
+            <>
+              <span className={cn(
+                "ml-1.5 font-medium",
+                metrics.isDeficit ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+              )}>
+                {metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount, true)}
+              </span>
+              {metrics.isDeficit && (
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 ml-1" />
+              )}
+            </>
           )}
         </button>
       )}
@@ -175,18 +174,20 @@ const EventMetricsCard = ({
           <StatBlock
             label="Doanh thu"
             value={formatCurrency(metrics.totalAmount)}
+            subText={`Tổng doanh thu sự kiện`}
           />
           <StatBlock
             label="Phí nền tảng"
             value={formatCurrency(metrics.platformFee)}
-            subText={`${metrics.flatformFeePercent}% + ${formatCurrency(metrics.fixFee, true)}`}
+            subText={`${metrics.flatformFeePercent}% Doanh Thu + ${formatCurrency(metrics.fixFee, true)}`}
             variant="warning"
           />
           <StatBlock
             label="Thanh toán"
             value={metrics.isDeficit ? '0đ' : formatCurrency(metrics.payoutAmount)}
-            subText={metrics.isDeficit ? 'Không đủ bù phí' : `Sau ${metrics.datePayout} ngày`}
+            subText={metrics.isDeficit ? 'Không đủ bù phí' : `Sau ${metrics.datePayout} ngày khi kết thúc sự kiện`}
             variant={metrics.isDeficit ? 'danger' : 'success'}
+            showAlert={metrics.isDeficit}
           />
         </div>
       </div>
@@ -194,6 +195,4 @@ const EventMetricsCard = ({
   );
 };
 
-// Export DeficitAlert để sử dụng trong event card title
-export { DeficitAlert };
 export default EventMetricsCard;
