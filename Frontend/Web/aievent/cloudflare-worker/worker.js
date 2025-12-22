@@ -15,9 +15,9 @@ var corsHeaders = {
   'Access-Control-Max-Age': '86400'
 };
 
-var SYSTEM_PROMPT = 'You are an AI assistant that extracts event information from text and returns it as JSON. Extract ONLY the following fields if they are EXPLICITLY mentioned in the text: title (Event title/name), description (Short description max 200 chars), detailedDescription (Detailed description), locationName (Venue/location name), address (Street address), district (District/area in Vietnam context), startTime (Event start time ISO format YYYY-MM-DDTHH:mm), endTime (Event end time ISO format), saleStartTime (Ticket sale start time ISO format), saleEndTime (Ticket sale end time ISO format), ticketTypes (Array of ticket types with ticketName, ticketPrice as number, ticketQuantity as number, ticketDescription), linkRef (Reference link/URL if any). CRITICAL RULES: 1. Return ONLY valid JSON, no markdown or explanation. 2. MUST use null for ANY field NOT EXPLICITLY mentioned in the text - DO NOT invent or assume values. 3. For dates: ONLY extract if date/time is explicitly written in text. If no date/time mentioned, use null. If only date given without time, assume 00:00 for start and 23:59 for end. 4. For Vietnamese text, keep the original language. 5. ticketPrice should be a number (VND), ticketQuantity should be a number. 6. If year is not specified but date is given, use 2025. 7. NEVER create default dates like today date - only use null if not mentioned.';
+var SYSTEM_PROMPT = 'You are an AI assistant that extracts event information from text and returns it as JSON. Extract ONLY the following fields if they are EXPLICITLY mentioned in the text: title (Event title/name - remove surrounding quotes like " or \'), description (Short description max 200 chars), detailedDescription (Detailed description), locationName (Venue/location name), address (Street address), district (District/area in Vietnam context), startTime (Event start time ISO format YYYY-MM-DDTHH:mm), endTime (Event end time ISO format), saleStartTime (Ticket sale start time ISO format), saleEndTime (Ticket sale end time ISO format), ticketTypes (Array of ticket types with ticketName, ticketPrice as number, ticketQuantity as number, ticketDescription), linkRef (Reference link/URL if any). CRITICAL RULES: 1. Return ONLY valid JSON, no markdown or explanation. 2. MUST use null for ANY field NOT EXPLICITLY mentioned in the text - DO NOT invent or assume values. 3. For dates: ONLY extract if date/time is explicitly written in text. If no date/time mentioned, use null. If only date given without time, assume 00:00 for start and 23:59 for end. 4. For Vietnamese text, keep the original language but REMOVE decorative quotes around titles. 5. ticketPrice should be a number (VND), ticketQuantity should be a number. 6. If year is not specified but date is given, use 2025. 7. NEVER create default dates like today date - only use null if not mentioned. 8. IMPORTANT: In JSON string values, properly escape special characters. Do not use raw quotes inside strings - use escaped quotes or remove them. 9. For title field: if the title has quotes like Game Show "Name" or Event \'Name\', extract as Game Show Name or Event Name (without the inner quotes).';
 
-var IMAGE_PROMPT_SYSTEM = 'You are an expert at creating image generation prompts for event banners. Given event information, create a detailed, vivid prompt for generating a wide banner image (16:9 aspect ratio). The prompt should be in English, descriptive, and suitable for Stable Diffusion. Focus on visual elements, atmosphere, colors, and style suitable for a professional event banner. Keep it under 150 words. Return ONLY the prompt text, no explanation.';
+var IMAGE_PROMPT_SYSTEM = 'You are an expert at creating image generation prompts for event banners. Given event information, create a detailed, vivid prompt for generating a wide banner image (16:9 aspect ratio). The prompt should be in English, descriptive, and suitable for Stable Diffusion. Focus on visual elements, atmosphere, colors, and style suitable for a professional event banner. IMPORTANT: The image must NOT contain any text, letters, words, numbers, or typography. Focus only on visual imagery, scenery, and abstract elements. Keep it under 150 words. Return ONLY the prompt text, no explanation.';
 
 // Format content system prompts for different styles
 var FORMAT_CONTENT_PROMPTS = {
@@ -83,6 +83,12 @@ async function handleParseEvent(request) {
       });
     }
 
+    // Sanitize input text to handle special characters that might break JSON parsing
+    var sanitizedText = text
+      .replace(/[\x00-\x1F\x7F]/g, ' ') // Remove control characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
     var aiResponse = await fetch(
       'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + AI_MODEL,
       {
@@ -94,7 +100,7 @@ async function handleParseEvent(request) {
         body: JSON.stringify({
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: 'Extract event information from this text and return as JSON:\n\n' + text }
+            { role: 'user', content: 'Extract event information from this text and return as JSON:\n\n' + sanitizedText }
           ],
           max_tokens: 2048,
           temperature: 0.1
@@ -132,7 +138,36 @@ async function handleParseEvent(request) {
       jsonStr = jsonObjectMatch[0];
     }
 
-    var parsedData = JSON.parse(jsonStr.trim());
+    // Clean up the JSON string before parsing - fix common JSON issues
+    jsonStr = jsonStr
+      .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+      .replace(/\\u([0-9a-fA-F]{0,3}[^0-9a-fA-F])/g, '\\\\u$1') // Fix incomplete unicode escapes
+      .replace(/\\([^"\\\/bfnrtu])/g, '\\\\$1') // Fix invalid escape sequences
+      .replace(/,\s*}/g, '}') // Remove trailing commas before }
+      .replace(/,\s*]/g, ']') // Remove trailing commas before ]
+      .replace(/"\s*\n\s*"/g, '" "') // Fix broken strings across lines
+      .trim();
+
+    // Try to parse, if fails try additional cleanup
+    var parsedData;
+    try {
+      parsedData = JSON.parse(jsonStr);
+    } catch (parseError) {
+      // Additional cleanup for stubborn JSON
+      jsonStr = jsonStr
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove all control chars including extended
+        .replace(/\\x[0-9a-fA-F]{2}/g, '') // Remove hex escapes
+        .replace(/\\u[0-9a-fA-F]{4}/g, function(match) {
+          // Validate unicode escapes
+          try {
+            return JSON.parse('"' + match + '"');
+          } catch (e) {
+            return '';
+          }
+        });
+      
+      parsedData = JSON.parse(jsonStr);
+    }
 
     return new Response(JSON.stringify({ success: true, data: parsedData }), {
       headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
@@ -242,9 +277,20 @@ async function handleGenerateMultipleImages(request) {
 // Helper function to generate a single image
 async function generateSingleImage(eventData, variationIndex) {
   try {
-    var eventSummary = 'Event: ' + (eventData.title || 'Untitled Event');
-    if (eventData.description) eventSummary += '. Description: ' + eventData.description;
-    if (eventData.locationName) eventSummary += '. Location: ' + eventData.locationName;
+    // Sanitize event data to handle special characters
+    var sanitizeText = function(text) {
+      if (!text) return '';
+      return text
+        .replace(/['"]/g, '') // Remove quotes
+        .replace(/[<>]/g, '') // Remove angle brackets
+        .replace(/[\n\r]/g, ' ') // Replace newlines with spaces
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    };
+    
+    var eventSummary = 'Event: ' + sanitizeText(eventData.title || 'Untitled Event');
+    if (eventData.description) eventSummary += '. Description: ' + sanitizeText(eventData.description);
+    if (eventData.locationName) eventSummary += '. Location: ' + sanitizeText(eventData.locationName);
 
     // Add variation instruction for different images
     var variationHints = [
@@ -283,8 +329,8 @@ async function generateSingleImage(eventData, variationIndex) {
 
     var imagePrompt = promptData.result.response.trim();
     
-    // Add quality enhancers and banner-specific instructions
-    imagePrompt = imagePrompt + ', wide banner format 16:9 aspect ratio, high quality, professional event banner, vibrant colors, modern design, 4k, detailed, no text, no watermark';
+    // Add quality enhancers and banner-specific instructions - emphasize NO TEXT
+    imagePrompt = imagePrompt + ', wide banner format 16:9 aspect ratio, high quality, professional event banner, vibrant colors, modern design, 4k, detailed, absolutely no text, no letters, no words, no typography, no watermark, no writing, text-free image';
 
     var imageResponse = await fetch(
       'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + IMAGE_MODEL,
@@ -296,6 +342,7 @@ async function generateSingleImage(eventData, variationIndex) {
         },
         body: JSON.stringify({
           prompt: imagePrompt,
+          negative_prompt: 'text, letters, words, numbers, typography, watermark, signature, writing, font, caption, title, label, logo with text',
           num_steps: 20,
           guidance: 7.5,
           width: 1024,  // Wide banner format
