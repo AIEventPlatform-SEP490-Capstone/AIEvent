@@ -149,14 +149,8 @@ export const generateMultipleEventImages = async (eventData, count = 3) => {
  */
 export const formatRichTextContent = async (content, formatStyle = 'professional') => {
   try {
-    // Debug: Log what we're sending to the API
-    console.log('=== formatRichTextContent Debug ===');
-    console.log('Content being sent:', content);
-    console.log('Format style:', formatStyle);
-    
     // Pre-check for images before sending
     const preCheckImages = content.match(/<img[^>]*>/gi) || [];
-    console.log('Pre-check images found:', preCheckImages.length);
     preCheckImages.forEach((img, i) => console.log(`Image ${i}:`, img.substring(0, 100) + '...'));
     
     const response = await fetch(`${WORKER_URL}/format-content`, {
@@ -169,8 +163,6 @@ export const formatRichTextContent = async (content, formatStyle = 'professional
 
     const data = await response.json();
     
-    console.log('API Response:', data);
-
     if (!response.ok) {
       throw new Error(data.error || 'Failed to format content');
     }
@@ -178,7 +170,6 @@ export const formatRichTextContent = async (content, formatStyle = 'professional
     if (data.success) {
       // Verify images in response
       const responseImages = (data.formattedContent || '').match(/<img[^>]*>/gi) || [];
-      console.log('Images in API response:', responseImages.length);
       
       return {
         success: true,

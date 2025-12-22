@@ -1162,16 +1162,23 @@ const CreateEventPage = () => {
       }
       
       let imageUrls = [];
-      // Separate existing URLs (from clone/edit) and new files to upload
+      // Separate existing URLs (from clone/edit), base64 images (from AI), and new files to upload
       const existingImageUrls = imagePreview.filter(url => 
         typeof url === 'string' && 
         (url.startsWith('http://') || url.startsWith('https://')) &&
         !url.startsWith('blob:')
       );
       
-      if (selectedImages.length > 0) {
-        // Upload new images to Cloudinary
-        const newImageUrls = await uploadImagesToCloudinary(selectedImages);
+      // Get base64 images (from AI generation)
+      const base64Images = imagePreview.filter(url =>
+        typeof url === 'string' &&
+        url.startsWith('data:')
+      );
+      
+      if (selectedImages.length > 0 || base64Images.length > 0) {
+        // Upload new images to Cloudinary (both File objects and base64)
+        const filesToUpload = [...selectedImages, ...base64Images];
+        const newImageUrls = await uploadImagesToCloudinary(filesToUpload);
         // Combine existing URLs with newly uploaded URLs
         imageUrls = [...existingImageUrls, ...newImageUrls];
       } else if (existingImageUrls.length > 0) {

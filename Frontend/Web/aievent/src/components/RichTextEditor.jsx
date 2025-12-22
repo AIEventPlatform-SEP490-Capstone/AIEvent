@@ -268,10 +268,6 @@ const RichTextEditor = ({
   const handleAIFormat = useCallback(async (formatStyle = 'professional') => {
     const currentContent = localValue;
     
-    // Debug: Log the raw content from Quill
-    console.log('=== AI Format Debug ===');
-    console.log('Raw content from Quill:', currentContent);
-    
     // Check if content is empty
     if (!currentContent || currentContent.trim() === '' || currentContent === '<p><br></p>') {
       toast.error('Vui lòng nhập nội dung trước khi format');
@@ -300,8 +296,6 @@ const RichTextEditor = ({
     
     // Check if content has text (not just images)
     const plainText = currentContent?.replace(/<[^>]*>/g, '').trim();
-    console.log('Plain text extracted:', plainText);
-    console.log('Has images:', hasImages, 'Image count:', imageMatches.length);
     
     // Allow formatting if there's text OR images
     if (!plainText && !hasImages) {
@@ -313,15 +307,10 @@ const RichTextEditor = ({
     setPreviousContent(currentContent); // Save for undo
 
     try {
-      const result = await formatRichTextContent(currentContent, formatStyle);
-      
-      console.log('Format result:', result);
-      
+      const result = await formatRichTextContent(currentContent, formatStyle);      
       if (result.success && result.formattedContent) {
         // Verify images are preserved in the result
         const resultImages = result.formattedContent.match(/<img[^>]*>/gi) || [];
-        console.log('Images in result:', resultImages.length);
-        console.log('Formatted content:', result.formattedContent);
         
         setLocalValue(result.formattedContent);
         if (onChange) {
