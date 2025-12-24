@@ -37,11 +37,6 @@ jobs:
               }
           }
 
-      - name: 🔄 Restart IIS to apply env variables
-        shell: powershell
-        run: |
-          iisreset
-
       - name: ⚙️ Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
