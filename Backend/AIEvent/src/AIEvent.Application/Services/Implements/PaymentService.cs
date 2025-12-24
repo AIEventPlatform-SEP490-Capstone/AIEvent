@@ -428,7 +428,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .Include(e => e.OrganizerProfile)
                 .Where(e => e.Status == EventStatus.WaitingForPayout
-                            && e.PayoutAttemptCount < 7
+                            && e.PayoutAttemptCount <= 7
                             && !e.IsDeleted)
                 .OrderBy(e => e.CompletedAt)
                 .Take(200)
