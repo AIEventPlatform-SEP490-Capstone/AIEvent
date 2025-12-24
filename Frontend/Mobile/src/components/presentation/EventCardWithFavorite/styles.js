@@ -202,6 +202,30 @@ export const styles = StyleSheet.create({
         marginBottom: 12,
     },
 
+    // AI Recommendation Reason
+    reasonContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#FFF9E6',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 12,
+        borderLeftWidth: 3,
+        borderLeftColor: '#FFD700',
+    },
+
+    reasonLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#8B7500',
+    },
+
+    reasonText: {
+        flex: 1,
+        fontSize: 12,
+        color: '#666666',
+        lineHeight: 18,
+    },
+
     // Divider
     divider: {
         height: 1,

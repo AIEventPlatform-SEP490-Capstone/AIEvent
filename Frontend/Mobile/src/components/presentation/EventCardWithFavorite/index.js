@@ -215,6 +215,18 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false, isStaff 
           </CustomText>
         )}
 
+        {/* AI Recommendation Reason */}
+        {event.reason && isRecommended && (
+          <View style={styles.reasonContainer}>
+            <CustomText variant="caption" style={styles.reasonLabel}>
+              💡 Lý do gợi ý:{' '}
+            </CustomText>
+            <CustomText variant="caption" style={styles.reasonText} numberOfLines={2}>
+              {event.reason}
+            </CustomText>
+          </View>
+        )}
+
         {/* Divider */}
         <View style={styles.divider} />
 

@@ -115,7 +115,7 @@ class EventService {
       // Add timestamp to prevent caching
       queryParams.append('_t', Date.now());
       const url = `${EndUrls.EVENTS}?${queryParams.toString()}`;
-      const response = await BaseApiService.get(url); 
+      const response = await BaseApiService.get(url);
       const firstItem = response?.data?.data?.items?.[0] || response?.data?.items?.[0];
       // Extract data from the paginated response
       // The backend returns SuccessResponse<BasePaginated<EventsResponse>>
@@ -549,7 +549,9 @@ class EventService {
           currentPage: data.currentPage || data.CurrentPage || pageNumber,
           totalPages: data.totalPages || data.TotalPages || 1,
           totalItems: data.totalItems || data.TotalItems || items.length || 0,
-          pageSize: data.pageSize || data.PageSize || pageSize
+          pageSize: data.pageSize || data.PageSize || pageSize,
+          hasPreviousPage: data.hasPreviousPage || data.HasPreviousPage || false,
+          hasNextPage: data.hasNextPage || data.HasNextPage || false,
         },
         message: 'AI recommended events fetched successfully',
       };
