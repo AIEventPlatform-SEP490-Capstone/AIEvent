@@ -540,7 +540,8 @@ namespace AIEvent.Application.Services.Implements
 
                 var eventLockResult = await _unitOfWork.ExecuteSqlRawAsync(@"
                         UPDATE Events
-                        SET UpdatedAt = GETUTCDATE()
+                        SET UpdatedAt = GETUTCDATE(),
+                            PayoutAttemptCount = PayoutAttemptCount + 1
                         WHERE Id = @EventId
                           AND Status = 4
                           AND PayoutAttemptCount < 7
@@ -575,8 +576,6 @@ namespace AIEvent.Application.Services.Implements
                 if (payoutResponse.ApprovalState != PayoutApprovalState.Completed)
                 {
                     _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id);
-
-                    ev.PayoutAttemptCount++;
 
                     if (ev.PayoutAttemptCount >= 7)
                     {
