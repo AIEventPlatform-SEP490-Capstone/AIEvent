@@ -2782,6 +2782,11 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event e) => e);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            // Mock ExecuteSqlRawAsync for optimistic locking - return 1 to indicate successful lock
+            _mockUnitOfWork.Setup(x => x.ExecuteSqlRawAsync(
+                It.Is<string>(s => s.Contains("UPDATE Events") && s.Contains("Status = 4")),
+                It.IsAny<object[]>()))
+                .ReturnsAsync(1);
             _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
                 .ReturnsAsync(payoutResponse);
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
