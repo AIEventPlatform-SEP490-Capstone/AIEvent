@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 19,
     fontFamily: Fonts.bold,
-    color: '#1E293B',
+    color: '#343b1eff',
     letterSpacing: -0.3,
   },
   sectionCount: {

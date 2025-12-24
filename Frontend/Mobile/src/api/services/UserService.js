@@ -1,12 +1,22 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import BaseApiService from './BaseApiService';
 import EndUrls from '../EndUrls';
+import StorageKeys from '../../constants/StorageKeys';
 
 class UserService {
   static async getProfile() {
     try {
       const data = await BaseApiService.get(EndUrls.PROFILE);
-      
+
       if ((data.statusCode === "AIE20000" || data.statusCode === "AIE20001") && data.data) {
+        // Save user data to AsyncStorage for persistence
+        try {
+          await AsyncStorage.setItem(StorageKeys.USER_DATA, JSON.stringify(data.data));
+        } catch (storageError) {
+          console.warn('Failed to cache user profile:', storageError);
+          // Continue even if caching fails
+        }
+
         return {
           success: true,
           data: data.data,
@@ -57,7 +67,7 @@ class UserService {
       if (profileData.longitude && profileData.longitude !== '') {
         formData.append('Longitude', profileData.longitude);
       }
-      
+
       if (profileData.avatarImage) {
         formData.append('AvatarImg', profileData.avatarImage);
       }
@@ -152,7 +162,7 @@ class UserService {
       }
 
       const data = await BaseApiService.patch(EndUrls.UPDATE_PROFILE, formData);
-      
+
       if ((data.statusCode === "AIE20000" || data.statusCode === "AIE20001") && data.message) {
         return {
           success: true,

@@ -304,10 +304,10 @@ export default function MyTickets() {
         // Convert both dates to UTC+7 for comparison
         const eventDate = new Date(ev.startTime);
         eventDate.setHours(eventDate.getHours() + 7);
-        
+
         const filterDate = new Date(dateFilter);
         filterDate.setHours(filterDate.getHours() + 7);
-        
+
         if (
           eventDate.getDate() !== filterDate.getDate() ||
           eventDate.getMonth() !== filterDate.getMonth() ||
@@ -365,11 +365,11 @@ export default function MyTickets() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    
+
     // Convert UTC date to UTC+7
     const date = new Date(dateString);
     date.setHours(date.getHours() + 7); // Add 7 hours for UTC+7
-    
+
     const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     const months = [
       "Tháng 1",
@@ -385,7 +385,7 @@ export default function MyTickets() {
       "Tháng 11",
       "Tháng 12",
     ];
-    
+
     return {
       day: days[date.getDay()],
       date: date.getDate(),
@@ -400,7 +400,7 @@ export default function MyTickets() {
 
   const renderUserReportsSection = () => {
     if (!showReports) return null;
-  
+
     return (
       <div className="mt-8 border rounded-lg overflow-hidden">
         <div className="bg-red-50 px-5 py-3 border-b">
@@ -409,7 +409,7 @@ export default function MyTickets() {
             Báo cáo của bạn
           </h3>
         </div>
-  
+
         <div className="divide-y">
           {loadingReports ? (
             <div className="p-6 space-y-4">
@@ -432,7 +432,7 @@ export default function MyTickets() {
                 hour: "2-digit",
                 minute: "2-digit",
               });
-  
+
               const reportTypeLabel = {
                 Scam: "Lừa đảo",
                 FakeInfo: "Thông tin sai lệch",
@@ -442,7 +442,7 @@ export default function MyTickets() {
                 Inappropriate: "Không phù hợp",
                 Other: "Khác",
               }[report.type] || report.type;
-  
+
               return (
                 <div
                   key={idx}
@@ -470,7 +470,7 @@ export default function MyTickets() {
                         </p>
                       </div>
                     </div>
-  
+
                     {/* Cột 2: Nội dung báo cáo */}
                     <div className="space-y-2">
                       <div>
@@ -505,7 +505,7 @@ export default function MyTickets() {
                         </p>
                       </div>
                     </div>
-  
+
                     {/* Cột 3: Phản hồi hệ thống */}
                     <div className="space-y-2">
                       <div>
@@ -812,7 +812,7 @@ export default function MyTickets() {
                           <div className="w-[40%] bg-gray-100 flex items-center justify-center overflow-hidden relative">
                             {selectedEvent?.image ? (
                               <img
-                                src={selectedEvent.image}
+                                src={selectedEvent.image.split(',')[0].trim()}
                                 alt={selectedEvent.title}
                                 className="w-full h-full object-cover"
                               />
@@ -1216,7 +1216,7 @@ export default function MyTickets() {
                         </button>
                         {event.image ? (
                           <img
-                            src={event.image}
+                            src={event.image.split(',')[0].trim()}
                             alt={event.title}
                             className="w-full h-full object-cover"
                           />
@@ -1346,7 +1346,7 @@ export default function MyTickets() {
                             {eventDate.day} {eventDate.date} {eventDate.month}, {eventDate.time}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-600">
-                            {event.address || "-"} 
+                            {event.address || "-"}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-600">
                             {event.totalTickets || 0} vé

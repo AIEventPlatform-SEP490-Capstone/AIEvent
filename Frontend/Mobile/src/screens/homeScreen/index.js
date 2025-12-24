@@ -270,14 +270,47 @@ const HomeScreen = () => {
       });
     };
 
+    // Get the first image from imgListEvent array or use existing image
+    const getEventImage = () => {
+      // If imgListEvent exists and has items, use the first one
+      if (eventData.imgListEvent && Array.isArray(eventData.imgListEvent) && eventData.imgListEvent.length > 0) {
+        return { uri: eventData.imgListEvent[0] };
+      }
+      // If EventImages exists (alternative naming)
+      if (eventData.EventImages && Array.isArray(eventData.EventImages) && eventData.EventImages.length > 0) {
+        return { uri: eventData.EventImages[0] };
+      }
+      // Fall back to existing image field
+      if (eventData.image) {
+        return eventData.image;
+      }
+      // Default fallback
+      return null;
+    };
+
     return {
       ...eventData,
+      // Map category from API field
+      category: eventData.category || eventData.eventCategoryName || eventData.CategoryName || eventData.EventCategoryName,
+      // Map location from API field
+      location: eventData.location || eventData.locationName || eventData.LocationName,
+      // Map image from imgListEvent array
+      image: getEventImage(),
+      // Map rating from API field
+      rating: eventData.rating || eventData.averageRating || eventData.AverageRating || 0,
+      // Map attendees from soldQuantity or totalRatings
+      attendees: eventData.attendees || eventData.soldQuantity || eventData.SoldQuantity || eventData.totalRatings || eventData.TotalRatings || 0,
+      // Calculate and format price
       price: calculateDisplayPrice(eventData),
+      // Transform tags array
       tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || []),
+      // Map time fields
       saleStartTime: eventData.saleStartTime || eventData.SaleStartTime,
       saleEndTime: eventData.saleEndTime || eventData.SaleEndTime,
       startTime: eventData.startTime || eventData.StartTime,
       endTime: eventData.endTime || eventData.EndTime,
+      // Preserve the reason field for AI recommendations
+      reason: eventData.reason,
     };
   };
 
@@ -438,6 +471,15 @@ const HomeScreen = () => {
       event={item}
       onPress={handleEventPress}
       isStaff={isStaffUser(accessToken)}
+    />
+  );
+
+  const renderAIEventCard = ({ item }) => (
+    <EventCardWithFavorite
+      event={item}
+      onPress={handleEventPress}
+      isStaff={isStaffUser(accessToken)}
+      isRecommended={true}
     />
   );
 
@@ -630,7 +672,7 @@ const HomeScreen = () => {
             ) : aiEvents.length > 0 ? (
               <FlatList
                 data={aiEvents}
-                renderItem={renderEventCard}
+                renderItem={renderAIEventCard}
                 keyExtractor={keyExtractor}
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={false}

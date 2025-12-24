@@ -11,6 +11,7 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
@@ -21,6 +22,7 @@ import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
+import StorageKeys from '../../constants/StorageKeys';
 import { UserService, walletAPI } from '../../api/services';
 import { logoutUser } from '../../redux/actions/Action';
 import ScreenNames from '../../constants/ScreenNames';
@@ -53,15 +55,33 @@ const ProfileScreen = ({ navigation }) => {
   const hasFetchedProfile = useRef(false);
 
   useEffect(() => {
+    // Load cached profile data first for better UX
+    const loadCachedProfile = async () => {
+      try {
+        const cachedData = await AsyncStorage.getItem(StorageKeys.USER_DATA);
+        if (cachedData) {
+          const parsedData = JSON.parse(cachedData);
+          setProfile(parsedData);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.log('Failed to load cached profile:', error);
+      }
+    };
+
     if (!isLoggedIn) {
       setIsLoading(false);
       return;
     }
 
-    if (!hasFetchedProfile.current) {
-      hasFetchedProfile.current = true;
-      fetchUserProfile();
-    }
+    // Load cached data immediately, then fetch fresh data
+    loadCachedProfile();
+    fetchUserProfile();
+
+    // Cleanup: reset fetch flag when component unmounts
+    return () => {
+      hasFetchedProfile.current = false;
+    };
   }, [isLoggedIn]);
 
   const menuItems = isStaff
@@ -81,29 +101,22 @@ const ProfileScreen = ({ navigation }) => {
       { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
     ];
 
-  useEffect(() => {
-    if (!hasFetchedProfile.current) {
-      hasFetchedProfile.current = true;
-      fetchUserProfile();
-    }
-  }, []);
-
   const fetchUserProfile = async () => {
     if (!accessToken || !isLoggedIn) {
       setIsLoading(false);
       return;
     }
-  
+
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await UserService.getProfile();
-      
+
       if (result.success) {
         setProfile(result.data);
       } else {
-        if (result.message?.includes('authenticated') || result.message?.includes('token')) {       
+        if (result.message?.includes('authenticated') || result.message?.includes('token')) {
           setError('Phiên đăng nhập hết hạn');
         } else {
           setError(result.message || 'Không thể tải thông tin');
@@ -314,7 +327,7 @@ const ProfileScreen = ({ navigation }) => {
           key={item.id}
           style={[
             styles.menuItem,
-            isStaff && styles.menuItemStaff 
+            isStaff && styles.menuItemStaff
           ]}
           onPress={() => {
             if (item.onPress) {
@@ -330,9 +343,9 @@ const ProfileScreen = ({ navigation }) => {
               {item.icon}
             </CustomText>
           </View>
-          <CustomText 
-            variant="caption" 
-            color="primary" 
+          <CustomText
+            variant="caption"
+            color="primary"
             style={[styles.menuLabel, isStaff && { fontWeight: '600', fontSize: 16 }]}
           >
             {item.label}
@@ -1204,7 +1217,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
             </View>
 
             {/* Favorite Event Types */}
-            
+
           </View>
         );
       default:
