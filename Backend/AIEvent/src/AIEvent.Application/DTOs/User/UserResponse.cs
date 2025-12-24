@@ -9,6 +9,7 @@
         public List<string> Roles { get; set; } = [];
         public string? Address { get; set; }
         public string? AvatarImgUrl { get; set; }
+        public int? TotalEventFlags { get; set; }
     }
 
     public class UserOrganizerResponse
