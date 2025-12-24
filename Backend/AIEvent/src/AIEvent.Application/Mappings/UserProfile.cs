@@ -11,7 +11,15 @@ namespace AIEvent.Application.Mappings
     {
         public UserProfile() 
         {
-            CreateMap<User, UserResponse>();
+            CreateMap<User, UserResponse>()
+                .ForMember(
+                    dest => dest.TotalEventFlags,
+                    opt => opt.MapFrom(src =>
+                        src.OrganizerProfile != null
+                            ? src.OrganizerProfile.TotalEventFlags
+                            : (int?)null
+                    )
+                );
 
             CreateMap<User, UserDetailResponse>()
                 .ForMember(dest => dest.InterestedDistricts,
