@@ -19,7 +19,8 @@ import {
   Heart,
   Filter,
   Download,
-  RefreshCw
+  RefreshCw,
+  Flag
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -680,10 +681,16 @@ const UserManagement = () => {
             )}
 
             <div className="space-y-3">
-              {getCurrentUsers().map((user, index) => (
+              {getCurrentUsers().map((user, index) => {
+                const hasHighFlags = user.totalEventFlags >= 3;
+                return (
                 <div 
                   key={user.id} 
-                  className="group relative flex items-center justify-between p-5 border border-slate-200 rounded-2xl hover:shadow-lg hover:border-blue-300 transition-all duration-300 bg-white"
+                  className={`group relative flex items-center justify-between p-5 border rounded-2xl hover:shadow-lg transition-all duration-300 ${
+                    hasHighFlags 
+                      ? 'border-red-300 bg-red-50 hover:border-red-400' 
+                      : 'border-slate-200 bg-white hover:border-blue-300'
+                  }`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center space-x-4 flex-1">
@@ -705,6 +712,16 @@ const UserManagement = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-slate-900 text-lg truncate">{user.fullName}</h3>
+                        {user.totalEventFlags > 0 && (
+                          <Badge className={`flex items-center gap-1 ${
+                            user.totalEventFlags >= 3 
+                              ? 'bg-red-100 text-red-700 border-red-200' 
+                              : 'bg-orange-100 text-orange-700 border-orange-200'
+                          }`}>
+                            <Flag className="w-3 h-3" />
+                            {user.totalEventFlags} flags
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-600">
                         <span className="flex items-center gap-1.5">
@@ -757,7 +774,8 @@ const UserManagement = () => {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {getCurrentUsers().length === 0 && !loading && (
