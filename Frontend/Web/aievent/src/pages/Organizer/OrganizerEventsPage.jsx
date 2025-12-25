@@ -19,7 +19,13 @@ import {
   Mail,
   Phone,
   Globe,
-  ChevronRight
+  ChevronRight,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Building2,
+  FileText,
+  Briefcase
 } from 'lucide-react';
 import { useEvents } from '../../hooks/useEvents';
 import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
@@ -207,25 +213,43 @@ export default function OrganizerEventsPage() {
 
                   {/* Contact Info */}
                   <div className="space-y-3">
-                    {organizer.email && (
+                    {organizer.contactName && (
+                      <div className="flex items-start gap-3">
+                        <User className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-gray-600">Người liên hệ</p>
+                          <p className="text-sm text-gray-900">{organizer.contactName}</p>
+                        </div>
+                      </div>
+                    )}
+                    {(organizer.contactEmail || organizer.email) && (
                       <div className="flex items-start gap-3">
                         <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <p className="text-xs font-semibold text-gray-600">Email</p>
-                          <a href={`mailto:${organizer.email}`} className="text-sm text-blue-600 hover:underline break-all">
-                            {organizer.email}
+                          <a href={`mailto:${organizer.contactEmail || organizer.email}`} className="text-sm text-blue-600 hover:underline break-all">
+                            {organizer.contactEmail || organizer.email}
                           </a>
                         </div>
                       </div>
                     )}
-                    {organizer.phone && (
+                    {(organizer.contactPhone || organizer.phone) && (
                       <div className="flex items-start gap-3">
                         <Phone className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <p className="text-xs font-semibold text-gray-600">Điện thoại</p>
-                          <a href={`tel:${organizer.phone}`} className="text-sm text-green-600 hover:underline">
-                            {organizer.phone}
+                          <a href={`tel:${organizer.contactPhone || organizer.phone}`} className="text-sm text-green-600 hover:underline">
+                            {organizer.contactPhone || organizer.phone}
                           </a>
+                        </div>
+                      </div>
+                    )}
+                    {organizer.address && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-gray-600">Địa chỉ</p>
+                          <p className="text-sm text-gray-900">{organizer.address}</p>
                         </div>
                       </div>
                     )}
@@ -240,7 +264,71 @@ export default function OrganizerEventsPage() {
                         </div>
                       </div>
                     )}
+                    {organizer.taxCode && (
+                      <div className="flex items-start gap-3">
+                        <FileText className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-gray-600">Mã số thuế</p>
+                          <p className="text-sm text-gray-900">{organizer.taxCode}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Social Links */}
+                  {(organizer.urlFacebook || organizer.urlInstagram || organizer.urlLinkedIn) && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 mb-3">Mạng xã hội</p>
+                      <div className="flex gap-3">
+                        {organizer.urlFacebook && (
+                          <a 
+                            href={organizer.urlFacebook} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
+                            title="Facebook"
+                          >
+                            <Facebook className="w-5 h-5 text-blue-600" />
+                          </a>
+                        )}
+                        {organizer.urlInstagram && (
+                          <a 
+                            href={organizer.urlInstagram} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center hover:bg-pink-200 transition-colors"
+                            title="Instagram"
+                          >
+                            <Instagram className="w-5 h-5 text-pink-600" />
+                          </a>
+                        )}
+                        {organizer.urlLinkedIn && (
+                          <a 
+                            href={organizer.urlLinkedIn} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center hover:bg-sky-200 transition-colors"
+                            title="LinkedIn"
+                          >
+                            <Linkedin className="w-5 h-5 text-sky-600" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Experience Description */}
+                  {organizer.experienceDescription && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-start gap-3">
+                        <Briefcase className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-gray-600 mb-1">Kinh nghiệm tổ chức</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{organizer.experienceDescription}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : null}
