@@ -1036,7 +1036,7 @@ namespace AIEvent.Application.Services.Implements
                             OrganizerProfileId = ev.OrganizerProfileId,
                             EventId = ev.Id,
                             EventName = ev.Title,
-                            GrossRevenue = 0,
+                            GrossRevenue = ev.TotalAmount,
                             PlatformFee = platformFee,
                             NetRevenue = 0,
                             ReportMonth = payoutDate.Month,
