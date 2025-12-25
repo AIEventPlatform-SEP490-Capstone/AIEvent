@@ -1400,7 +1400,7 @@ namespace AIEvent.Application.Services.Implements
                     ReportYear = r.ReportYear,
                     TransactionDate = r.PayoutDate,
                     CreatedAt = r.CreatedAt,
-                    Description = $"Payout cho sự kiện: {r.EventName}"
+                    Description = $"Thanh toán cho sự kiện: {r.EventName}. Phí nền tảng: {r.PlatformFee:N0} VNĐ\""
                 });
             }
  
