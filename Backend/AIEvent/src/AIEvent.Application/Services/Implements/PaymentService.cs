@@ -468,11 +468,13 @@ namespace AIEvent.Application.Services.Implements
                 return;
             }
 
-            var managerRole = await _unitOfWork.RoleRepository
+            var managerUserIds = await _unitOfWork.UserRepository
                                     .Query()
+                                    .Include(u => u.Role)
                                     .AsNoTracking()
-                                    .Where(r => r.Name == "Manager" && !r.IsDeleted)
-                                    .Select(r => r.Id)
+                                    .Where(u => u.Role.Name == "Manager" && !u.Role.IsDeleted
+                                                && !u.IsDeleted)
+                                    .Select(u => u.Id)
                                     .ToListAsync();
 
             foreach (var ev in pendingEvents)
@@ -549,7 +551,21 @@ namespace AIEvent.Application.Services.Implements
                     Category = new List<string> { "Payout" }
                 };
 
-                var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
+                Payout? payoutResponse = null;
+                bool isApiError = false;
+                string? errorMessage = null;
+
+                try
+                {
+                    payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
+                }
+                catch (Exception ex)
+                {
+                    isApiError = true;
+                    errorMessage = ex.Message;
+                    _logger.LogError(ex, "API Error when calling PayOS payout for Event {EventId}, Reference {Ref}", ev.Id, referenceId);
+                }
+
                 var payoutDate = DateTime.UtcNow;
 
                 var transactionResult = await _transactionHelper.ExecuteInTransactionAsync(async () =>
@@ -564,7 +580,19 @@ namespace AIEvent.Application.Services.Implements
                         return ErrorResponse.FailureResult("Event already paid out", ErrorCodes.InvalidInput);
                     }
 
-                    if (payoutResponse.ApprovalState == PayoutApprovalState.Completed)
+                    if (isApiError)
+                    {
+                        ev.PayoutAttemptCount += 1;
+                        _logger.LogWarning("Payout API error for Event {EventId}, attempt {AttemptCount}/7. Error: {Error}",
+                            ev.Id, ev.PayoutAttemptCount, errorMessage);
+
+                        if (ev.PayoutAttemptCount >= 7)
+                        {
+                            ev.Status = EventStatus.ErrorPayment;
+                            ev.ReasonCancel = $"Payout thất bại do lỗi hệ thống {ev.PayoutAttemptCount} lần.";
+                        }
+                    }
+                    else if(payoutResponse?.ApprovalState == PayoutApprovalState.Completed)
                     {
                         var revenueReport = new RevenueReport
                         {
@@ -605,7 +633,7 @@ namespace AIEvent.Application.Services.Implements
                     continue;
                 }
 
-                if (payoutResponse.ApprovalState == PayoutApprovalState.Completed)
+                if (payoutResponse?.ApprovalState == PayoutApprovalState.Completed)
                 {
                     await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
                     {
@@ -636,21 +664,17 @@ namespace AIEvent.Application.Services.Implements
                                 EventId = ev.Id
                             });
                         }
-                        
-                        if (managerRole != null || managerRole!.Count < 0)
-                        {
 
-                            foreach (var managerId in managerRole)
+                        foreach (var managerId in managerUserIds)
+                        {
+                            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
                             {
-                                await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
-                                {
-                                    UserId = managerId,
-                                    Title = "Cảnh báo: Sự kiện payout thất bại nhiều lần",
-                                    Message = $"Sự kiện <strong>{ev.Title}</strong> (ID: {ev.Id}) đã thất bại payout {ev.PayoutAttemptCount} lần và bị chuyển sang ErrorPayment.",
-                                    Type = NotificationType.System,
-                                    EventId = ev.Id
-                                });
-                            }
+                                UserId = managerId,
+                                Title = "Cảnh báo: Sự kiện payout thất bại nhiều lần",
+                                Message = $"Sự kiện <strong>{ev.Title}</strong> (ID: {ev.Id}) đã thất bại payout {ev.PayoutAttemptCount} lần và bị chuyển sang ErrorPayment. {errorMessage}.",
+                                Type = NotificationType.System,
+                                EventId = ev.Id
+                            });
                         }
                     }
                 }
