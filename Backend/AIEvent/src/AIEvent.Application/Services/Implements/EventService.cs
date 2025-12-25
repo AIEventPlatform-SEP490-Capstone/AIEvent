@@ -867,23 +867,21 @@ namespace AIEvent.Application.Services.Implements
 
             foreach (var eventResponse in result)
             {
-                SystemSetting? setting = null;
+                if (!eventResponse.SaleStartTime.HasValue)
+                    continue;
 
-                if (eventResponse.SaleStartTime.HasValue)
-                {
-                    var saleStartUtc = DateTime.SpecifyKind(
-                        eventResponse.SaleStartTime.Value,
-                        DateTimeKind.Utc
-                    );
+                var saleStartUtc = new DateTimeOffset(
+                    eventResponse.SaleStartTime.Value,
+                    TimeSpan.Zero
+                );
 
-                    setting = allSystemSettings
-                        .Where(s =>
-                            s.UpdatedAt.HasValue &&
-                            s.UpdatedAt.Value.UtcDateTime <= saleStartUtc
-                        )
-                        .OrderByDescending(s => s.UpdatedAt!.Value.UtcDateTime)
-                        .FirstOrDefault();
-                }
+                var setting = allSystemSettings
+                    .Where(s =>
+                        s.UpdatedAt.HasValue &&
+                        s.UpdatedAt.Value <= saleStartUtc
+                    )
+                    .OrderByDescending(s => s.UpdatedAt!.Value)
+                    .FirstOrDefault();
 
                 if (setting != null)
                 {
@@ -998,20 +996,21 @@ namespace AIEvent.Application.Services.Implements
 
                 foreach (var ev in endedEvents)
                 {
-                    var saleStart = ev.SaleStartTime!.Value;
+                    var saleStartUtc = ev.SaleStartTime!.Value;
 
-                    var key = $"{saleStart:yyyy-MM}";
+                    var key = $"{saleStartUtc:yyyy-MM}";
 
                     if (!settingCache.TryGetValue(key, out var setting))
                     {
                         setting = allSettings
-                            .FirstOrDefault(s => s.UpdatedAt <= saleStart)
-                            ?? allSettings.Last();
+                            .OrderByDescending(s => s.UpdatedAt)
+                            .FirstOrDefault(s => s.UpdatedAt!.Value.UtcDateTime <= saleStartUtc)
+                            ?? allSettings.First();
 
-                        settingCache[key] = setting;
+                    settingCache[key] = setting;
                     }
 
-                    var totalRevenue = ev.TotalAmount;
+                var totalRevenue = ev.TotalAmount;
                     decimal platformFee = totalRevenue * setting.FlatformFee + setting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
 
@@ -1588,21 +1587,29 @@ namespace AIEvent.Application.Services.Implements
 			if (ev == null)
 				return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
+            var saleStartUtc = new DateTimeOffset(ev.SaleStartTime!.Value, TimeSpan.Zero);
+
             var systemSetting = await _unitOfWork.SystemSettingRepository
                 .Query()
                 .AsNoTracking()
-                .Where(s => !s.IsDeleted && s.UpdatedAt <= ev.SaleStartTime) 
-                .OrderByDescending(s => s.UpdatedAt)                     
+                .Where(s =>
+                    !s.IsDeleted &&
+                    s.UpdatedAt.HasValue &&
+                    s.UpdatedAt.Value.UtcDateTime <= saleStartUtc
+                )
+                .OrderByDescending(s => s.UpdatedAt)
                 .FirstOrDefaultAsync();
 
             if (systemSetting == null)
             {
                 systemSetting = await _unitOfWork.SystemSettingRepository
                     .Query()
+                    .AsNoTracking()
                     .Where(s => !s.IsDeleted)
                     .OrderByDescending(s => s.UpdatedAt)
                     .FirstOrDefaultAsync();
             }
+
 
             if (systemSetting == null)
                 return ErrorResponse.FailureResult("System setting not found", ErrorCodes.NotFound);

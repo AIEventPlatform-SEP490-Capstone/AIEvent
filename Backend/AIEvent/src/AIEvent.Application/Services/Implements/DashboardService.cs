@@ -416,7 +416,7 @@ namespace AIEvent.Application.Services.Implements
                     EventReminderHours = request.EventReminderHours,
                     CreatedBy = adminId,
                     CreatedAt = now,
-                    UpdatedAt = request.DateApply.UtcDateTime,
+                    UpdatedAt = request.DateApply.ToUniversalTime(),
                 };
 
                 await _unitOfWork.SystemSettingRepository.AddAsync(newSetting);
@@ -517,7 +517,7 @@ namespace AIEvent.Application.Services.Implements
                 var totalUsers = await _unitOfWork.UserRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId)
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.IsActive)
                     .CountAsync();
 
                 response.TotalUsers = totalUsers;
@@ -996,7 +996,7 @@ namespace AIEvent.Application.Services.Implements
                 monthlyStats.NewUsers = await _unitOfWork.UserRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart)
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart && u.IsActive)
                     .CountAsync();
 
                 monthlyStats.NewEvents = await _unitOfWork.EventRepository

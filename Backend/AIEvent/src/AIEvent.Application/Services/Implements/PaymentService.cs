@@ -443,10 +443,12 @@ namespace AIEvent.Application.Services.Implements
                 {
                     var key = ev.SaleStartTime!.Value.ToString("yyyy-MM-dd");
 
+                    var saleStartUtc = new DateTimeOffset(ev.SaleStartTime.Value, TimeSpan.Zero);
+
                     if (!settingCache.TryGetValue(key, out var setting))
                     {
                         setting = allSettings
-                               .Where(s => s.UpdatedAt <= ev.SaleStartTime)
+                               .Where(s => s.UpdatedAt <= saleStartUtc)
                                .OrderByDescending(s => s.UpdatedAt)
                                .FirstOrDefault()
                                ?? defaultSetting;
@@ -479,13 +481,15 @@ namespace AIEvent.Application.Services.Implements
             {
                 var key = ev.SaleStartTime!.Value.ToString("yyyy-MM-dd");
 
+                var saleStartUtc = new DateTimeOffset(ev.SaleStartTime.Value, TimeSpan.Zero);
+
                 if (!settingCache.TryGetValue(key, out var setting))
                 {
                     setting = allSettings
-                        .Where(s => s.UpdatedAt <= ev.SaleStartTime)
-                        .OrderByDescending(s => s.UpdatedAt)
-                        .FirstOrDefault()
-                        ?? defaultSetting;
+                           .Where(s => s.UpdatedAt <= saleStartUtc)
+                           .OrderByDescending(s => s.UpdatedAt)
+                           .FirstOrDefault()
+                           ?? defaultSetting;
 
                     settingCache[key] = setting;
                 }
