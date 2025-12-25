@@ -264,8 +264,7 @@ namespace AIEvent.Application.Services.Implements
                     if (!settingCache.TryGetValue(key, out var setting))
                     {
                         setting = allSettings
-                            .FirstOrDefault(s => s.UpdatedAt!.Value.Year == eventItem.SaleStartTime!.Value.Year &&
-                                                 s.UpdatedAt!.Value.Month == eventItem.SaleStartTime!.Value.Month)
+                            .FirstOrDefault(s => s.UpdatedAt!.Value <= eventItem.SaleStartTime!.Value)
                             ?? allSettings.First();
 
                         settingCache[key] = setting;
