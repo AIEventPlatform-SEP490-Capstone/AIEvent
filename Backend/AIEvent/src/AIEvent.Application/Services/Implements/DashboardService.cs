@@ -416,7 +416,7 @@ namespace AIEvent.Application.Services.Implements
                     EventReminderHours = request.EventReminderHours,
                     CreatedBy = adminId,
                     CreatedAt = now,
-                    UpdatedAt = request.DateApply.UtcDateTime,
+                    UpdatedAt = request.DateApply.ToUniversalTime(),
                 };
 
                 await _unitOfWork.SystemSettingRepository.AddAsync(newSetting);
