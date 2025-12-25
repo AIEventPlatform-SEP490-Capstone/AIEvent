@@ -10,7 +10,12 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Separator } from "../../components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
@@ -70,12 +75,15 @@ const ActivityItem = ({ title, subtitle, meta, index }) => (
 );
 
 const PaymentItem = ({ item, index }) => {
-  const isPayout = item.historyType === "Payout" || item.transactionType === "Payout";
-  const isTopup = item.historyType === "Topup" || item.transactionType === "Topup";
+  const isPayout =
+    item.historyType === "Payout" || item.transactionType === "Payout";
+  const isTopup =
+    item.historyType === "Topup" || item.transactionType === "Topup";
   const isWithdraw =
     item.historyType === "Withdraw" || item.transactionType === "Withdraw";
   const isFee =
-    item.historyType === "Platform fee" || item.transactionType === "Platform fee";
+    item.historyType === "Platform fee" ||
+    item.transactionType === "Platform fee";
   const isIncome = isPayout || isTopup;
   const isExpense = isWithdraw || isFee;
   const getIcon = () => {
@@ -93,7 +101,6 @@ const PaymentItem = ({ item, index }) => {
     if (isFee) return "outline";
     return "outline";
   };
-
 
   return (
     <div
@@ -117,16 +124,17 @@ const PaymentItem = ({ item, index }) => {
         </div>
         <div className="text-right">
           <div
-            className={`font-semibold ${
-              isIncome ? "text-green-600" : isExpense ? "text-red-600" : ""
-            }`}
+            className={`font-semibold ${isIncome ? "text-green-600" : isExpense ? "text-red-600" : ""
+              }`}
           >
             {isIncome ? "+ " : "- "}
             {Math.abs(item.amount || 0).toLocaleString("vi-VN")} VNĐ
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Clock className="h-3 w-3" />
-            {new Date(item.createdAt || item.transactionDate).toLocaleString("vi-VN")}
+            {new Date(item.createdAt || item.transactionDate).toLocaleString(
+              "vi-VN"
+            )}
           </div>
         </div>
       </div>
@@ -156,6 +164,7 @@ const PaymentHistoryDashboard = () => {
   // ====== Payment History State ======
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentPage, setPaymentPage] = useState(1);
+  const [historyType, setHistoryType] = useState(null);
   const [paymentData, setPaymentData] = useState({
     items: [],
     totalItems: 0,
@@ -192,6 +201,7 @@ const PaymentHistoryDashboard = () => {
         year: year || undefined,
         month: month || undefined,
         search: search || undefined,
+        historyType: historyType || undefined,
         pageNumber: paymentPage,
         pageSize: 10,
       });
@@ -246,7 +256,11 @@ const PaymentHistoryDashboard = () => {
         {headerRight}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="activity" className="gap-2">
             <Activity className="h-4 w-4" />
@@ -265,19 +279,23 @@ const PaymentHistoryDashboard = () => {
             <StatCard
               icon={Users}
               title="Người dùng mới (tháng)"
-              value={activityReport.monthlyStatistics.newUsers.toLocaleString("vi-VN")}
+              value={activityReport.monthlyStatistics.newUsers.toLocaleString(
+                "vi-VN"
+              )}
             />
             <StatCard
               icon={Calendar}
               title="Sự kiện mới (tháng)"
-              value={activityReport.monthlyStatistics.newEvents.toLocaleString("vi-VN")}
+              value={activityReport.monthlyStatistics.newEvents.toLocaleString(
+                "vi-VN"
+              )}
             />
             <StatCard
               icon={BarChart3}
               title="Doanh thu (tháng)"
-              value={(activityReport.monthlyStatistics.revenue ?? 0).toLocaleString(
-                "vi-VN"
-              )}
+              value={(
+                activityReport.monthlyStatistics.revenue ?? 0
+              ).toLocaleString("vi-VN")}
               sub="VNĐ"
             />
           </div>
@@ -287,13 +305,18 @@ const PaymentHistoryDashboard = () => {
               <CardHeader className="flex-row items-center justify-between pb-4">
                 <div>
                   <CardTitle>Hoạt động gần đây</CardTitle>
-                  <CardDescription>Cập nhật mới nhất từ hệ thống</CardDescription>
+                  <CardDescription>
+                    Cập nhật mới nhất từ hệ thống
+                  </CardDescription>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!activityReport.recentActivities.hasPreviousPage || activityLoading}
+                    disabled={
+                      !activityReport.recentActivities.hasPreviousPage ||
+                      activityLoading
+                    }
                     onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -302,7 +325,10 @@ const PaymentHistoryDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!activityReport.recentActivities.hasNextPage || activityLoading}
+                    disabled={
+                      !activityReport.recentActivities.hasNextPage ||
+                      activityLoading
+                    }
                     onClick={() => setActivityPage((p) => p + 1)}
                   >
                     Sau
@@ -316,11 +342,12 @@ const PaymentHistoryDashboard = () => {
                     Đang tải...
                   </div>
                 )}
-                {!activityLoading && activityReport.recentActivities.items.length === 0 && (
-                  <div className="p-6 text-center text-muted-foreground">
-                    Chưa có hoạt động nào.
-                  </div>
-                )}
+                {!activityLoading &&
+                  activityReport.recentActivities.items.length === 0 && (
+                    <div className="p-6 text-center text-muted-foreground">
+                      Chưa có hoạt động nào.
+                    </div>
+                  )}
                 {activityReport.recentActivities.items.map((item, idx) => (
                   <ActivityItem
                     key={item.id}
@@ -350,14 +377,18 @@ const PaymentHistoryDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">Người dùng mới</div>
+                  <div className="text-sm text-muted-foreground">
+                    Người dùng mới
+                  </div>
                   <div className="font-medium">
                     {activityReport.monthlyStatistics.newUsers}
                   </div>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">Sự kiện mới</div>
+                  <div className="text-sm text-muted-foreground">
+                    Sự kiện mới
+                  </div>
                   <div className="font-medium">
                     {activityReport.monthlyStatistics.newEvents}
                   </div>
@@ -366,9 +397,9 @@ const PaymentHistoryDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">Doanh thu</div>
                   <div className="font-medium">
-                    {(activityReport.monthlyStatistics.revenue ?? 0).toLocaleString(
-                      "vi-VN"
-                    )}{" "}
+                    {(
+                      activityReport.monthlyStatistics.revenue ?? 0
+                    ).toLocaleString("vi-VN")}{" "}
                     VNĐ
                   </div>
                 </div>
@@ -413,6 +444,29 @@ const PaymentHistoryDashboard = () => {
                   placeholder="1-12"
                 />
               </div>
+              <div className="w-48">
+                <Label>Loại giao dịch</Label>
+                <Select
+                  value={historyType || "ALL"}
+                  onValueChange={(value) => {
+                    setHistoryType(value === "ALL" ? null : value);
+                    setPaymentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả</SelectItem>
+                    <SelectItem value="Payout">Doanh thu (Payout)</SelectItem>
+                    <SelectItem value="Platform fee">Phí nền tảng</SelectItem>
+                    <SelectItem value="Topup">Nạp tiền</SelectItem>
+                    <SelectItem value="Withdraw">Rút tiền</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex-1 min-w-64">
                 <Label htmlFor="search">Tìm kiếm</Label>
                 <div className="relative">
@@ -470,7 +524,9 @@ const PaymentHistoryDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={paymentPage >= paymentData.totalPages || paymentLoading}
+                    disabled={
+                      paymentPage >= paymentData.totalPages || paymentLoading
+                    }
                     onClick={() => setPaymentPage((p) => p + 1)}
                   >
                     Sau
@@ -478,7 +534,8 @@ const PaymentHistoryDashboard = () => {
                   </Button>
                 </div>
                 <div>
-                  Trang {paymentData.currentPage || paymentPage}/{paymentData.totalPages || 1} – Tổng{" "}
+                  Trang {paymentData.currentPage || paymentPage}/
+                  {paymentData.totalPages || 1} – Tổng{" "}
                   {paymentData.totalItems || 0} giao dịch
                 </div>
               </div>
