@@ -1456,13 +1456,15 @@ namespace AIEvent.Application.Services.Implements
                     .ToList();
             }
 
+            int totalFinalCount = result.Count;
+
             var paginatedResult = result
                 .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt.DateTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
 
-            return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalCount, pageNumber, pageSize);
+            return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalFinalCount, pageNumber, pageSize);
         }
 
         private decimal CalculatePlatformFeeForEvent(
