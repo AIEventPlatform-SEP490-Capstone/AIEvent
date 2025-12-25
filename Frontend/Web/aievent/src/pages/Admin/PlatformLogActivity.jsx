@@ -74,11 +74,15 @@ const PaymentItem = ({ item, index }) => {
   const isTopup = item.historyType === "Topup" || item.transactionType === "Topup";
   const isWithdraw =
     item.historyType === "Withdraw" || item.transactionType === "Withdraw";
-
+  const isFee =
+    item.historyType === "Platform fee" || item.transactionType === "Platform fee";
+  const isIncome = isPayout || isTopup;
+  const isExpense = isWithdraw || isFee;
   const getIcon = () => {
-    if (isPayout) return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
-    if (isTopup) return <ArrowDownCircle className="h-4 w-4 text-blue-600" />;
+    if (isPayout) return <ArrowDownCircle className="h-4 w-4 text-green-600" />;
+    if (isTopup) return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
     if (isWithdraw) return <ArrowUpCircle className="h-4 w-4 text-red-600" />;
+    if (isFee) return <ArrowUpCircle className="h-4 w-4 text-orange-500" />;
     return <DollarSign className="h-4 w-4" />;
   };
 
@@ -86,8 +90,10 @@ const PaymentItem = ({ item, index }) => {
     if (isPayout) return "default";
     if (isTopup) return "secondary";
     if (isWithdraw) return "destructive";
+    if (isFee) return "outline";
     return "outline";
   };
+
 
   return (
     <div
@@ -112,10 +118,10 @@ const PaymentItem = ({ item, index }) => {
         <div className="text-right">
           <div
             className={`font-semibold ${
-              isTopup ? "text-green-600" : isWithdraw || isPayout ? "text-red-600" : ""
+              isIncome ? "text-green-600" : isExpense ? "text-red-600" : ""
             }`}
           >
-            {isTopup ? "+" : "-"}
+            {isIncome ? "+ " : "- "}
             {Math.abs(item.amount || 0).toLocaleString("vi-VN")} VNĐ
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

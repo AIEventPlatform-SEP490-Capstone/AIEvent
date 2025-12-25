@@ -1397,12 +1397,31 @@ namespace AIEvent.Application.Services.Implements
                     ReportYear = r.ReportYear,
                     TransactionDate = r.PayoutDate,
                     CreatedAt = r.CreatedAt,
-                    Description = $"Thanh toán cho sự kiện: {r.EventName}. " + 
-                      (CalculatePlatformFeeForEvent(r.PlatformFee, r.GrossRevenue) == 0
-                          ? ""
-                          : $"Phí nền tảng đã thu được: {CalculatePlatformFeeForEvent(r.PlatformFee, r.GrossRevenue):N0} VNĐ")
-
+                    Description = $"Thanh toán doanh thu cho sự kiện: {r.EventName}"
                 });
+
+                if (CalculatePlatformFeeForEvent(r.PlatformFee, r.GrossRevenue) != 0)
+                {
+                    result.Add(new PayoutHistoryResponse
+                    {
+                        HistoryType = "Platform fee",
+                        RevenueReportId = r.Id,
+                        OrganizerProfileId = r.OrganizerProfileId,
+                        OrganizerName = r.OrganizerProfile?.ContactName ?? string.Empty,
+                        OrganizerEmail = r.OrganizerProfile?.ContactEmail ?? string.Empty,
+                        CompanyName = r.OrganizerProfile?.CompanyName,
+                        EventId = r.EventId,
+                        EventName = r.EventName,
+                        GrossRevenue = r.GrossRevenue,
+                        PlatformFee = r.PlatformFee,
+                        Amount = CalculatePlatformFeeForEvent(r.PlatformFee, r.GrossRevenue),
+                        ReportMonth = r.ReportMonth,
+                        ReportYear = r.ReportYear,
+                        TransactionDate = r.PayoutDate,
+                        CreatedAt = r.CreatedAt,
+                        Description = $"Phí nền tảng thu từ sự kiện: {r.EventName}"
+                    });
+                }
             }
  
             foreach (var wt in walletTransactions)
