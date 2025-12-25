@@ -139,9 +139,9 @@ export const dashboardAPI = {
   },
 
   // GET: Lấy lịch sử giao dịch thanh toán (Payout, Topup, Withdraw)
-  getPaymentHistory: async ({ year, month, search, pageNumber = 1, pageSize = 10 } = {}) => {
+  getPaymentHistory: async ({ year, month, search, historyType, pageNumber = 1, pageSize = 10 } = {}) => {
     const response = await fetcher.get("/dashboard/admin/payout-history", {
-      params: { year, month, search, pageNumber, pageSize },
+      params: { year, month, search, historyType,  pageNumber, pageSize },
     });
     return response.data?.data || response.data;
   },
