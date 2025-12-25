@@ -1317,7 +1317,7 @@ namespace AIEvent.Application.Services.Implements
 
 
 
-        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(string? search = null, int? year = null, int? month = null, string? historyType = null, int pageNumber = 1, int pageSize = 10)
         {
             IQueryable<RevenueReport> revenueQuery = _unitOfWork.RevenueReportRepository
                 .Query()
@@ -1444,7 +1444,18 @@ namespace AIEvent.Application.Services.Implements
                     TransactionType = wt.Type
                 });
             }
-             
+
+            if (!string.IsNullOrWhiteSpace(historyType))
+            {
+                var filterType = historyType.Trim();
+
+                result = result
+                    .Where(x =>
+                        x.HistoryType != null &&
+                        x.HistoryType.Equals(filterType, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
             var paginatedResult = result
                 .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt.DateTime)
                 .Skip((pageNumber - 1) * pageSize)

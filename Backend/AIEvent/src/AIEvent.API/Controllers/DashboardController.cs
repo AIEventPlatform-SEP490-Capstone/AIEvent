@@ -269,10 +269,11 @@ namespace AIEvent.API.Controllers
             [FromQuery] int? year = null,
             [FromQuery] int? month = null,
             [FromQuery] string? search = null,
+            [FromQuery] string? historyType = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
-            var result = await _dashboardService.GetPayoutHistoryAsync(search, year, month, pageNumber, pageSize);
+            var result = await _dashboardService.GetPayoutHistoryAsync(search, year, month, historyType, pageNumber, pageSize);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
