@@ -868,14 +868,23 @@ namespace AIEvent.Application.Services.Implements
             foreach (var eventResponse in result)
             {
                 SystemSetting? setting = null;
+
                 if (eventResponse.SaleStartTime.HasValue)
                 {
+                    var saleStartUtc = DateTime.SpecifyKind(
+                        eventResponse.SaleStartTime.Value,
+                        DateTimeKind.Utc
+                    );
+
                     setting = allSystemSettings
-                        .Where(s => s.UpdatedAt <= eventResponse.SaleStartTime.Value)
-                        .OrderByDescending(s => s.UpdatedAt)
+                        .Where(s =>
+                            s.UpdatedAt.HasValue &&
+                            s.UpdatedAt.Value.UtcDateTime <= saleStartUtc
+                        )
+                        .OrderByDescending(s => s.UpdatedAt!.Value.UtcDateTime)
                         .FirstOrDefault();
                 }
-                
+
                 if (setting != null)
                 {
                     eventResponse.FlatformFee = setting.FlatformFee;

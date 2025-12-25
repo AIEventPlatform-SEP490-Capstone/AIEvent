@@ -260,15 +260,15 @@ namespace AIEvent.Application.Services.Implements
                     if (user == null || user.IsDeleted)
                         continue;
 
-                var key = $"{eventItem.SaleStartTime:yyyy-MM}";
-                    if (!settingCache.TryGetValue(key, out var setting))
-                    {
-                        setting = allSettings
-                            .FirstOrDefault(s => s.UpdatedAt!.Value <= eventItem.SaleStartTime!.Value)
-                            ?? allSettings.First();
+                    var key = $"{eventItem.SaleStartTime:yyyy-MM}";
+                            if (!settingCache.TryGetValue(key, out var setting))
+                            {
+                                setting = allSettings
+                                    .FirstOrDefault(s => s.UpdatedAt!.Value <= eventItem.SaleStartTime!.Value)
+                                    ?? allSettings.First();
 
-                        settingCache[key] = setting;
-                    }
+                                settingCache[key] = setting;
+                            }
 
                     var reminderHours = setting.EventReminderHours > 0 ? setting.EventReminderHours : 3;
 
