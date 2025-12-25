@@ -25,11 +25,8 @@ export default function BecomeOrganizerPage() {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const { createOrganizer, getOrganizers } = useOrganizers();
+  const { createOrganizer } = useOrganizers();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taxCodeError, setTaxCodeError] = useState("");
-  const [isCheckingTaxCode, setIsCheckingTaxCode] = useState(false);
-  const taxCodeTimeoutRef = useRef(null);
 
   const { user } = useAuth();
 
@@ -61,41 +58,7 @@ export default function BecomeOrganizerPage() {
     agreeDataProcessing: false,
   });
 
-  // Kiểm tra mã số thuế trùng lặp
-  const checkTaxCodeExists = async (taxCode) => {
-    if (!taxCode || taxCode.trim() === "") {
-      setTaxCodeError("");
-      return false;
-    }
 
-    setIsCheckingTaxCode(true);
-    try {
-      // Tìm kiếm organizer có mã số thuế trùng
-      const result = await getOrganizers({ search: taxCode });
-      // Response có thể là { items: [...], totalItems: ... } hoặc array trực tiếp
-      const organizers = result?.items || result?.data || result || [];
-      
-      // Kiểm tra xem có organizer nào có mã số thuế trùng không
-      const exists = organizers.some(
-        (org) => org.taxCode && org.taxCode.trim().toLowerCase() === taxCode.trim().toLowerCase()
-      );
-
-      if (exists) {
-        setTaxCodeError("Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác.");
-        return true;
-      } else {
-        setTaxCodeError("");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error checking tax code:", error);
-      // Nếu có lỗi, không chặn người dùng nhưng vẫn hiển thị cảnh báo
-      setTaxCodeError("");
-      return false;
-    } finally {
-      setIsCheckingTaxCode(false);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -105,22 +68,6 @@ export default function BecomeOrganizerPage() {
       setForm((prev) => ({ ...prev, [name]: checked }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
-      
-      // Kiểm tra mã số thuế khi người dùng nhập
-      if (name === "TaxCode") {
-        // Clear timeout cũ nếu có
-        if (taxCodeTimeoutRef.current) {
-          clearTimeout(taxCodeTimeoutRef.current);
-        }
-        
-        // Xóa lỗi cũ khi người dùng đang gõ
-        setTaxCodeError("");
-        
-        // Debounce: đợi 500ms sau khi người dùng ngừng gõ
-        taxCodeTimeoutRef.current = setTimeout(() => {
-          checkTaxCodeExists(value);
-        }, 500);
-      }
     }
   };
 
@@ -143,14 +90,6 @@ export default function BecomeOrganizerPage() {
     if (!form.agreeTerms || !form.agreeDataProcessing) {
       toast.error("Vui lòng đồng ý với Điều khoản và xử lý dữ liệu.");
       return false;
-    }
-    // Kiểm tra mã số thuế trùng lặp trước khi submit
-    if (form.TaxCode && form.TaxCode.trim() !== "") {
-      const isDuplicate = await checkTaxCodeExists(form.TaxCode);
-      if (isDuplicate) {
-        toast.error("Mã số thuế đã được sử dụng. Vui lòng nhập mã số thuế khác.");
-        return false;
-      }
     }
     return true;
   };
@@ -177,22 +116,6 @@ export default function BecomeOrganizerPage() {
       const res = await createOrganizer(data);
       const result = res?.payload || res; //  Lấy payload thực tế từ Redux Toolkit
       console.log("✅ Organizer API response:", result);
-
-      // Nếu backend trả lỗi trùng mã số thuế
-      const duplicateTax =
-        result?.statusCode === "AIE40001" ||
-        (typeof result?.message === "string" &&
-          result.message.toLowerCase().includes("tax code"));
-      if (duplicateTax) {
-        const message =
-          result?.message ||
-          "Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác.";
-        setTaxCodeError(
-          "Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác."
-        );
-        toast.error(message);
-        return;
-      }
 
       //  nhận diện phản hồi thành công (AIE20100)
       if (
@@ -236,15 +159,6 @@ export default function BecomeOrganizerPage() {
     }
   }, [user]);
 
-  // Cleanup timeout khi component unmount
-  useEffect(() => {
-    return () => {
-      if (taxCodeTimeoutRef.current) {
-        clearTimeout(taxCodeTimeoutRef.current);
-      }
-    };
-  }, []);
-
   //  Helper hiển thị tên file hoặc placeholder
   const renderFileName = (file) => (
     <p className="text-sm text-muted-foreground mt-1">
@@ -280,21 +194,12 @@ export default function BecomeOrganizerPage() {
                   />
                 </div>
                 <div>
-                  <Label>Mã số thuế</Label>
-                  <div className="relative">
-                    <Input
-                      name="TaxCode"
-                      value={form.TaxCode}
-                      onChange={handleChange}
-                      className={taxCodeError ? "border-red-500" : ""}
-                    />
-                    {isCheckingTaxCode && (
-                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
-                  {taxCodeError && (
-                    <p className="text-sm text-red-500 mt-1">{taxCodeError}</p>
-                  )}
+                  <Label>Mã số thuế *</Label>
+                  <Input
+                    name="TaxCode"
+                    value={form.TaxCode}
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
 
@@ -743,11 +648,9 @@ export default function BecomeOrganizerPage() {
               type="submit"
               className="w-full mt-4"
               disabled={
-                isSubmitting || 
-                !form.agreeTerms || 
-                !form.agreeDataProcessing ||
-                !!taxCodeError ||
-                isCheckingTaxCode
+                isSubmitting ||
+                !form.agreeTerms ||
+                !form.agreeDataProcessing
               }
             >
               {isSubmitting ? (
