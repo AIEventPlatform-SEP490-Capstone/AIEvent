@@ -1628,8 +1628,12 @@ namespace AIEvent.Application.Services.Implements
 			if (ev.TotalAmount > 0)
 			{
 				platformFee = ev.TotalAmount * systemSetting.FlatformFee + systemSetting.FixFee;
-				netRevenue = ev.TotalAmount - platformFee;
-			}
+                netRevenue = decimal.Round(
+                    ev.TotalAmount - platformFee,
+                    0,
+                    MidpointRounding.AwayFromZero
+                );
+            }
 
 			if (netRevenue < 0)
 				return ErrorResponse.FailureResult("Payout amount is negative", ErrorCodes.InvalidInput);

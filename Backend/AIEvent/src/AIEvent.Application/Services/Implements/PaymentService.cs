@@ -330,12 +330,16 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult(
                         "Insufficient balance or wallet is being processed",
                         ErrorCodes.InternalServerError);
-
-                var amountAfterFees = request.Amount - 4000;
+                
+                var amountAfterFees = decimal.Round(
+                    request.Amount - 4000,
+                    0,
+                    MidpointRounding.AwayFromZero
+                );
                 var payoutRequest = new PayoutRequest
                 {
                     ReferenceId = referenceId,
-                    Amount = amountAfterFees,
+                    Amount = (long)amountAfterFees,
                     Description = request.Description ?? "Rút tiền",
                     ToBin = paymentInfo.BankBin,
                     ToAccountNumber = paymentInfo.AccountNumber,
@@ -530,20 +534,25 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var platformFee = ev.TotalAmount * platformFeePercent + platformFixedFee;
-                var payoutAmount = (long)(ev.TotalAmount - platformFee);
+                var payoutAmount = decimal.Round(
+                    ev.TotalAmount - platformFee,
+                    0,
+                    MidpointRounding.AwayFromZero
+                );
 
                 if (payoutAmount <= 0)
                 {
                     _logger.LogWarning("Payout amount negative for Event {EventId}: {Amount}", ev.Id, payoutAmount);
                     continue;
                 }
+                
 
                 var referenceId = GenerateOrderCode().ToString();
                 var payoutRequest = new PayoutRequest
                 {
                     ReferenceId = referenceId,
                     Amount = (long)payoutAmount,
-                    Description = $"Thanh toán sự kiện {ev.PayoutAttemptCount}",
+                    Description = $"Thanh toán sự kiện",
                     ToBin = paymentInfor.BankBin,
                     ToAccountNumber = paymentInfor.AccountNumber,
                     Category = new List<string> { "Payout" }
