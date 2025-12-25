@@ -358,9 +358,7 @@ namespace AIEvent.Application.Services.Implements
                         Type = TransactionType.Withdraw,
                         Direction = TransactionDirection.Out,
                         Status = TransactionStatus.Success,
-                        Description = $"{request.Description?.Trim() ?? "Rút tiền"}<br>" +
-                          $"Tên tài khoản nhận: {paymentInfo.AccountHolderName?.Trim() ?? "Không xác định"}<br>" +
-                          $"Số tài khoản nhận: {paymentInfo.AccountNumber?.Trim() ?? "Không xác định"}",
+                        Description = $"Rút tiền tên tài khoản nhận: {paymentInfo.AccountHolderName?.Trim() ?? "Không xác định"}. Số tài khoản nhận: {paymentInfo.AccountNumber?.Trim() ?? "Không xác định"}. Lý do: {request.Description ?? "Không"}",
                         ReferenceId = userId,
                         ReferenceType = ReferenceType.WithdrawRequest,
                     };
