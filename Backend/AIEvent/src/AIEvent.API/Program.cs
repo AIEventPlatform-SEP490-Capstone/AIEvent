@@ -115,15 +115,6 @@ namespace AIEvent.API
             app.UseMiddleware<ActivityLogMiddleware>();
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>(); 
 
-            app.UseWhen(context => !context.Request.Path.StartsWithSegments("/hangfire"), appBuilder =>
-            {
-                appBuilder.UseAuthentication();
-                appBuilder.UseAuthorization();
-            });
-            
-            app.UseHangfireDashboard("/hangfire");
-
-            
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -140,6 +131,13 @@ namespace AIEvent.API
             //     RequestPath = "/.well-known"
             // });
 
+            app.UseWhen(context => !context.Request.Path.StartsWithSegments("/hangfire"), appBuilder =>
+                        {
+                            appBuilder.UseAuthentication();
+                            appBuilder.UseAuthorization();
+                        });
+            
+            app.UseHangfireDashboard("/hangfire");
 
             app.MapControllers();
             app.MapHub<NotificationHub>("/hubs/notification");
