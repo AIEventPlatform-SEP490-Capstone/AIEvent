@@ -70,10 +70,10 @@ const ActivityItem = ({ title, subtitle, meta, index }) => (
 );
 
 const PaymentItem = ({ item, index }) => {
-  const isPayout = item.type === "Payout" || item.transactionType === "Payout";
-  const isTopup = item.type === "Topup" || item.transactionType === "Topup";
+  const isPayout = item.HistoryType === "Payout" || item.transactionType === "Payout";
+  const isTopup = item.HistoryType === "Topup" || item.transactionType === "Topup";
   const isWithdraw =
-    item.type === "Withdraw" || item.transactionType === "Withdraw";
+    item.HistoryType === "Withdraw" || item.transactionType === "Withdraw";
 
   const getIcon = () => {
     if (isPayout) return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
