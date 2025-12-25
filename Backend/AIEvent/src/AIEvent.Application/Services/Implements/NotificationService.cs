@@ -263,9 +263,17 @@ namespace AIEvent.Application.Services.Implements
                     var key = $"{eventItem.SaleStartTime:yyyy-MM}";
                             if (!settingCache.TryGetValue(key, out var setting))
                             {
+                                var saleStartTimeUtc = new DateTimeOffset(
+                                    eventItem.SaleStartTime!.Value,
+                                    TimeSpan.Zero
+                                    );
+
                                 setting = allSettings
-                                    .FirstOrDefault(s => s.UpdatedAt!.Value <= eventItem.SaleStartTime!.Value)
+                                    .Where(s => s.UpdatedAt <= saleStartTimeUtc)
+                                    .OrderByDescending(s => s.UpdatedAt)
+                                    .FirstOrDefault()
                                     ?? allSettings.First();
+
 
                                 settingCache[key] = setting;
                             }

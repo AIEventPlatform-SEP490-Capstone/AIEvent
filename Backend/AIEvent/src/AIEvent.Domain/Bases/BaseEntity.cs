@@ -26,7 +26,7 @@ namespace AIEvent.Domain.Base
         {
             CreatedBy = userId;
             CreatedAt = DateTimeOffset.Now;
-            SetUpdated(userId);
+            //SetUpdated(userId);
         }
         public void SetUpdated(string userId)
         {
