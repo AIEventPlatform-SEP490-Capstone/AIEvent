@@ -996,7 +996,7 @@ namespace AIEvent.Application.Services.Implements
                 monthlyStats.NewUsers = await _unitOfWork.UserRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart)
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart && u.IsActive)
                     .CountAsync();
 
                 monthlyStats.NewEvents = await _unitOfWork.EventRepository

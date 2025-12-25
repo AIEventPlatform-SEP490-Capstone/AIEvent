@@ -101,7 +101,7 @@ const PaymentItem = ({ item, index }) => {
             <div className="font-medium flex items-center gap-2">
               {item.userName || item.organizerName || "N/A"}
               <Badge variant={getBadgeVariant()} className="text-xs">
-                {item.type || item.transactionType}
+                {item.historyType || item.transactionType}
               </Badge>
             </div>
             <div className="text-sm text-muted-foreground">
