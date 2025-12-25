@@ -680,15 +680,6 @@ namespace AIEvent.Application.Services.Implements
                 response.ValidTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Valid)?.Count ?? 0;
                 response.UsedTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Used)?.Count ?? 0;
                  
-                var allSystemSettings = await _unitOfWork.SystemSettingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(s => !s.IsDeleted)
-                    .OrderByDescending(s => s.UpdatedAt)
-                    .ToListAsync();
-
-                var defaultSetting = allSystemSettings.FirstOrDefault();
-
                 var allCompletedEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
@@ -697,30 +688,30 @@ namespace AIEvent.Application.Services.Implements
                     .ToListAsync();
 
                 response.TotalRevenue = allCompletedEvents
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 response.RevenueToday = allCompletedEvents
                     .Where(e => e.CompletedAt.HasValue && e.CompletedAt.Value.Date == now.Date)
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 response.RevenueThisMonth = allCompletedEvents
                     .Where(e => e.CompletedAt.HasValue && 
                                e.CompletedAt.Value >= selectedMonthStart.UtcDateTime && 
                                e.CompletedAt.Value <= selectedMonthEnd.UtcDateTime)
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 // Tính toán GrowthPercentage cho Doanh thu
                 var currentMonthRevenue = allCompletedEvents
                     .Where(e => e.CompletedAt.HasValue && 
                                e.CompletedAt.Value >= currentMonthStart.UtcDateTime && 
                                e.CompletedAt.Value <= currentMonthEnd.UtcDateTime)
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 var lastMonthRevenue = allCompletedEvents
                     .Where(e => e.CompletedAt.HasValue && 
                                e.CompletedAt.Value >= lastMonthStart.UtcDateTime && 
                                e.CompletedAt.Value <= lastMonthEnd.UtcDateTime)
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 if (lastMonthRevenue > 0)
                     response.MonthlyRevenueGrowthPercentage = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
@@ -807,7 +798,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         Year = g.Key.Year,
                         Month = g.Key.Month,
-                        Revenue = g.Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting))
+                        Revenue = g.Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount))
                     })
                     .OrderBy(x => x.Year)
                     .ThenBy(x => x.Month)
@@ -1018,15 +1009,6 @@ namespace AIEvent.Application.Services.Implements
                             && e.Publish == true)
                     .CountAsync();
 
-                var systemSettingsForMonthly = await _unitOfWork.SystemSettingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(s => !s.IsDeleted)
-                    .OrderByDescending(s => s.UpdatedAt)
-                    .ToListAsync();
-
-                var defaultSettingForMonthly = systemSettingsForMonthly.FirstOrDefault();
-
                 var monthlyEvents = await _unitOfWork.EventRepository
                    .Query()
                    .AsNoTracking()
@@ -1040,7 +1022,7 @@ namespace AIEvent.Application.Services.Implements
                    .ToListAsync();
 
                 monthlyStats.Revenue = monthlyEvents
-                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, systemSettingsForMonthly, defaultSettingForMonthly));
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount));
 
                 response.MonthlyStatistics = monthlyStats;
 
@@ -1451,34 +1433,22 @@ namespace AIEvent.Application.Services.Implements
 
         private decimal CalculatePlatformFeeForEvent(
             decimal? platformFee, 
-            decimal totalAmount, 
-            DateTime? saleStartTime,
-            List<SystemSetting> allSystemSettings,
-            SystemSetting? defaultSetting)
+            decimal totalAmount)
         {
-            if (platformFee.HasValue && platformFee.Value > 0)
-                return platformFee.Value;
-
             if (totalAmount <= 0)
                 return 0;
 
-            SystemSetting? setting = null;
-            if (saleStartTime.HasValue)
-                setting = allSystemSettings
-                        .FirstOrDefault(s => s.UpdatedAt <= saleStartTime.Value && !s.IsDeleted);
+            if (platformFee.HasValue && platformFee.Value > 0)
+            {
+                decimal netRevenue = totalAmount - platformFee.Value;
+                
+                if (netRevenue <= 0)
+                    return totalAmount;
+                
+                return platformFee.Value;
+            }
 
-            setting ??= defaultSetting;
-
-            if (setting == null)
-                return 0;
-
-            decimal calculatedPlatformFee = totalAmount * setting.FlatformFee + setting.FixFee;
-            decimal netRevenue = totalAmount - calculatedPlatformFee;
-
-            if (netRevenue < 0)
-                return totalAmount;
-
-            return calculatedPlatformFee;
+            return 0;
         }
     }
 }
