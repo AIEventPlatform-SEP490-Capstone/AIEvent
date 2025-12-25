@@ -115,8 +115,8 @@ namespace AIEvent.API
             app.UseMiddleware<ActivityLogMiddleware>();
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>(); 
 
-            app.UseAuthentication();
-            app.UseAuthorization();
+            // app.UseAuthentication();
+            // app.UseAuthorization();
 
             // var wellKnownPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ".well-known");
             // if (!Directory.Exists(wellKnownPath))
