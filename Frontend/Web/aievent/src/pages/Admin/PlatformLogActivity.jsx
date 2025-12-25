@@ -2,6 +2,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dashboardAPI } from "../../api/dashboardAPI";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -84,8 +91,8 @@ const PaymentItem = ({ item, index }) => {
   const isFee =
     item.historyType === "Platform fee" ||
     item.transactionType === "Platform fee";
-  const isIncome = isPayout || isTopup;
-  const isExpense = isWithdraw || isFee;
+  const isIncome = isFee || isTopup;
+  const isExpense = isWithdraw || isPayout;
   const getIcon = () => {
     if (isPayout) return <ArrowDownCircle className="h-4 w-4 text-green-600" />;
     if (isTopup) return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
@@ -127,7 +134,7 @@ const PaymentItem = ({ item, index }) => {
             className={`font-semibold ${isIncome ? "text-green-600" : isExpense ? "text-red-600" : ""
               }`}
           >
-            {isIncome ? "+ " : "- "}
+            {isIncome ? "+" : "-"}
             {Math.abs(item.amount || 0).toLocaleString("vi-VN")} VNĐ
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -220,7 +227,7 @@ const PaymentHistoryDashboard = () => {
 
   useEffect(() => {
     if (activeTab === "payment") fetchPayments();
-  }, [paymentPage, year, month, search, activeTab]);
+  }, [paymentPage, year, month, search, historyType, activeTab]);
 
   // ====== Header Right (Refresh) ======
   const headerRight = useMemo(() => {
@@ -459,8 +466,8 @@ const PaymentHistoryDashboard = () => {
 
                   <SelectContent>
                     <SelectItem value="ALL">Tất cả</SelectItem>
-                    <SelectItem value="Payout">Doanh thu (Payout)</SelectItem>
-                    <SelectItem value="Platform fee">Phí nền tảng</SelectItem>
+                    <SelectItem value="Payout">Thanh toán tiền sự kiện</SelectItem>
+                    <SelectItem value="Platform fee">Doanh thu nền tảng</SelectItem>
                     <SelectItem value="Topup">Nạp tiền</SelectItem>
                     <SelectItem value="Withdraw">Rút tiền</SelectItem>
                   </SelectContent>
