@@ -56,7 +56,7 @@ namespace AIEvent.Application.Services.Implements
             if (!string.IsNullOrEmpty(request.TaxCode))
             {
                 var exists = await _unitOfWork.OrganizerProfileRepository.Query()
-                    .AnyAsync(t => t.TaxCode == request.TaxCode);
+                    .AnyAsync(t => t.TaxCode == request.TaxCode && t.Status == OrganizerProfileStatus.Approved);
 
                 if (exists)
                     return ErrorResponse.FailureResult("Tax code already exists.", ErrorCodes.InvalidInput);
@@ -64,7 +64,7 @@ namespace AIEvent.Application.Services.Implements
 
             var existingEmail = await _unitOfWork.OrganizerProfileRepository
                                                 .Query()
-                                                .FirstOrDefaultAsync(u => u.ContactEmail == request.ContactEmail && !u.IsDeleted);
+                                                .FirstOrDefaultAsync(u => u.ContactEmail == request.ContactEmail && !u.IsDeleted && u.Status == OrganizerProfileStatus.Approved);
             if(existingEmail != null)
                 return ErrorResponse.FailureResult("The organizer has already registered email", ErrorCodes.InvalidInput);
 
